@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Monkey Champion Battle</title>
+<title>Monkey Champion Battle - Equal Fighters</title>
 <style>
   * { box-sizing: border-box; }
   body {
@@ -52,16 +52,20 @@ background:transparent;font-size:28px;cursor:pointer;line-height:28px;
 }
 
 
+
+#restartButton, #bracketButton {
+  text-shadow: 0 1px 0 rgba(255,255,255,.8);
+}
 </style>
 </head>
 <body>
 <canvas id="gameCanvas"></canvas>
 <button id="restartButton">Next Fight</button>
 
-<button id="bracketButton">Tournament Bracket</button>
+<button id="bracketButton">Tournament Log</button>
 <div id="bracketPanel">
   <button id="closeBracketButton" aria-label="Close bracket">×</button>
-  <h3>Champion History</h3>
+  <h3>Tournament Log</h3>
   <div id="bracketList"><p>No completed fights yet.</p></div>
 </div>
 
@@ -151,14 +155,114 @@ addEventListener("resize", resizeCanvas);
 resizeCanvas();
 
 const monkeyNames = [
-  "Banana Bandit", "Coconut Kong", "Jungle Jack", "Mango Mike",
-  "Cheeky Chimp", "Bongo Banana", "King Plantain", "Monkey McGee",
-  "Peanut Primate", "Captain Coconut", "Gorilla Greg", "Swinging Sammy",
-  "Banana Bob", "Jungle Joe", "Chimpy Charlie", "Mighty Momo",
-  "Vine Victor", "Cocoa Kong", "Bamboo Bruno", "Primate Pete",
-  "Monkey Max", "Banana Bruno", "Jungle Jester", "Chimp Champion",
-  "Treetop Tony", "Funky Monkey", "Coconut Crusher", "Banana Bruiser",
-  "Vine Viper", "Mango Mayhem", "Plantain Puncher", "Treetop Titan"
+"Banana Bandit",
+"Coconut Kong",
+"Jungle Jack",
+"Mango Mike",
+"Cheeky Chimp",
+"Bongo Banana",
+"King Plantain",
+"Monkey McGee",
+"Peanut Primate",
+"Captain Coconut",
+"Gorilla Greg",
+"Swinging Sammy",
+"Banana Bob",
+"Jungle Joe",
+"Chimpy Charlie",
+"Mighty Momo",
+"Vine Victor",
+"Cocoa Kong",
+"Bamboo Bruno",
+"Primate Pete",
+"Monkey Max",
+"Banana Bruno",
+"Jungle Jester",
+"Chimp Champion",
+"Treetop Tony",
+"Funky Monkey",
+"Coconut Crusher",
+"Banana Bruiser",
+"Vine Viper",
+"Mango Mayhem",
+"Plantain Puncher",
+"Treetop Titan",
+"Barrel Barry",
+"Jungle Jasper",
+"Banana Blitz",
+"Chimpzilla",
+"Sir Bananas",
+"Professor Primate",
+"Captain Chimp",
+"General Gorilla",
+"Tiny Tamarin",
+"Macaque Max",
+"Howler Hank",
+"Bobo the Brave",
+"Congo Carl",
+"Banana Beast",
+"Tree Top Tim",
+"Mango Marshal",
+"King Koko",
+"Captain Canopy",
+"Forest Fred",
+"Palm Pete",
+"Banana Bonk",
+"Chimp Chaser",
+"Crazy Coco",
+"Banana Biscuit",
+"Lord Lemur",
+"Monkey Meteor",
+"Rocket Rango",
+"Turbo Tamarin",
+"Cannon Chimp",
+"Sneaky Simi",
+"Alpha Ape",
+"Omega Orang",
+"Banana Bolt",
+"Banana Boom",
+"Colonel Coconut",
+"Major Monkey",
+"Doctor Banana",
+"Jungle Jet",
+"Tree Swing Steve",
+"Captain Peel",
+"Monkey Maverick",
+"Vine Vandal",
+"Coco Crusher",
+"Bamboo Brawler",
+"Raging Rhesus",
+"Mischief Mike",
+"Banana Baron",
+"King Canopy",
+"Swing Sultan",
+"Palm Phantom",
+"Jungle Knight",
+"Coco Comet",
+"Banana Ninja",
+"Shadow Chimp",
+"Wild Winston",
+"Barrel Boss",
+"Monkey Matrix",
+"Golden Gorilla",
+"Storm Swinger",
+"Forest Fury",
+"Banana Rocket",
+"Primate Prime",
+"Tree Titan",
+"Banana Blaster",
+"Captain Chaos",
+"Monkey Monarch",
+"Iron Ape",
+"Silver Simian",
+"Bronze Baboon",
+"Electric Orangutan",
+"Cosmic Chimp",
+"Meteor Monkey",
+"Thunder Tail",
+"Jungle Giant",
+"Banana Knight",
+"Mango Master"
 ];
 
 const styles = [
@@ -166,16 +270,467 @@ const styles = [
   { color: "#5f3822", faceColor: "#c99565" },
   { color: "#9a6236", faceColor: "#e5b982" },
   { color: "#4e3325", faceColor: "#bc8a61" },
-  { color: "#75503a", faceColor: "#d5a979" }
+  { color: "#75503a", faceColor: "#d5a979" },
+  { color: "#2f2f35", faceColor: "#a69b91" },
+  { color: "#b06a3c", faceColor: "#f0c491" },
+  { color: "#6f4b2f", faceColor: "#d8ae7c" },
+  { color: "#473126", faceColor: "#b98663" },
+  { color: "#8f4633", faceColor: "#d89d74" },
+  { color: "#364a2d", faceColor: "#a9b78c" },
+  { color: "#54406d", faceColor: "#b8a4cd" }
 ];
 
 function randomItem(array) {
   return array[Math.floor(Math.random() * array.length)];
 }
 
+const nameStarts = [
+ "Rishaan",
+  "Banana",
+  "Coconut",
+  "Mango",
+  "Jungle",
+  "Vine",
+  "Bamboo",
+  "Barrel",
+  "Canopy",
+  "Treetop",
+  "Cocoa",
+  "Plantain",
+  "Palm",
+  "Forest",
+  "Thunder",
+  "Rocket",
+  "Shadow",
+  "Golden",
+  "Iron",
+  "Cosmic",
+  "Storm",
+  "Turbo",
+  "Wild",
+  "Sneaky",
+  "Mighty",
+  "Crazy",
+  "Electric",
+  "Silver",
+  "Bronze",
+  "Funky",
+  "Raging",
+  "Royal",
+  "Mystic",
+  "Blazing",
+  "Frozen",
+  "Savage",
+  "Lucky",
+  "Neon",
+  "Ancient",
+  "Lunar",
+  "Solar",
+  "Crimson",
+  "Emerald",
+  "Obsidian",
+  "Diamond",
+  "Mega",
+  "Ultra",
+  "Hyper",
+  "Chaos",
+  "Phantom",
+  "Inferno",
+  "Frost",
+  "Toxic",
+  "Nuclear",
+  "Thunderous",
+  "Ruby",
+  "Sapphire",
+  "Topaz",
+  "Jade",
+  "Onyx",
+  "Quartz",
+  "Granite",
+  "Marble",
+  "Rainforest",
+  "River",
+  "Waterfall",
+  "Mountain",
+  "Canyon",
+  "Lagoon",
+  "Island",
+  "Temple",
+  "Ruins",
+  "Totem",
+  "Drum",
+  "Bongo",
+  "Tropical",
+  "Papaya",
+  "Guava",
+  "Pineapple",
+  "Avocado",
+  "Peach",
+  "Berry",
+  "Melon",
+  "Kiwi",
+  "Dragonfruit",
+  "Moonlight",
+  "Sunrise",
+  "Twilight",
+  "Midnight",
+  "Starlight",
+  "Comet",
+  "Galaxy",
+  "Meteor",
+  "Nova",
+  "Orbit",
+  "Gravity",
+  "Blizzard",
+  "Cyclone",
+  "Hurricane",
+  "Lightning",
+  "Earthquake",
+  "Avalanche",
+  "Tsunami",
+  "Fireball",
+  "Volcano",
+  "Pixel",
+  "Laser",
+  "Robot",
+  "Cyber",
+  "Digital",
+  "Arcade",
+  "Glitch",
+  "Turbocharged",
+  "Super",
+  "Maximum",
+  "Supreme",
+  "Ultimate",
+  "Unstoppable",
+  "Legendary"
+];
+
+const nameEnds = [
+ "Das",
+  "Bandit",
+  "Kong",
+  "Crusher",
+  "Bruiser",
+  "Blaster",
+  "Brawler",
+  "Boss",
+  "Knight",
+  "Ninja",
+  "Titan",
+  "Champion",
+  "Meteor",
+  "Master",
+  "Maverick",
+  "Monarch",
+  "Phantom",
+  "Viper",
+  "Rocket",
+  "Rumble",
+  "Puncher",
+  "Swinger",
+  "Stomper",
+  "Striker",
+  "Warrior",
+  "Wizard",
+  "Wrecker",
+  "Howler",
+  "Chomper",
+  "Bonker",
+  "Boomer",
+  "Dasher",
+  "Dodger",
+  "Fury",
+  "Legend",
+  "Destroyer",
+  "Dynamo",
+  "Gladiator",
+  "Crusher",
+  "Cyclone",
+  "Havoc",
+  "Rascal",
+  "Ruler",
+  "Samurai",
+  "Shocker",
+  "Specter",
+  "Stinger",
+  "Tempest",
+  "Tornado",
+  "Troublemaker",
+  "Victory",
+  "Bouncer",
+  "Scrapper",
+  "Rambler",
+  "Ripper",
+  "Roarer",
+  "Rumbler",
+  "Smasher",
+  "Clobberer",
+  "Walloper",
+  "Whacker",
+  "Bopper",
+  "Bumper",
+  "Jumper",
+  "Leaper",
+  "Flipper",
+  "Spinner",
+  "Tumbler",
+  "Climber",
+  "Glider",
+  "Drifter",
+  "Rider",
+  "Raider",
+  "Ranger",
+  "Hunter",
+  "Scout",
+  "Captain",
+  "Commander",
+  "Chief",
+  "Guardian",
+  "Defender",
+  "Challenger",
+  "Contender",
+  "Hero",
+  "Ace",
+  "Star",
+  "Machine",
+  "Engine",
+  "Express",
+  "Force",
+  "Powerhouse",
+  "Daredevil",
+  "Menace",
+  "Riot",
+  "Rampage",
+  "Rush",
+  "Flash",
+  "Bolt",
+  "Spark",
+  "Flame",
+  "Frostbite",
+  "Moon",
+  "Sun",
+  "Eclipse",
+  "Galaxy",
+  "Comet",
+  "Nova",
+  "Orbit",
+  "Conqueror",
+  "Emperor",
+  "Prince",
+  "Duke",
+  "Baron",
+  "General"
+];
+
+const sillyFirstNames = [
+  "Bobo",
+  "Koko",
+  "Momo",
+  "Bongo",
+  "Chimpy",
+  "Macaque",
+  "Tamarin",
+  "Rango",
+  "Bruno",
+  "Barry",
+  "Charlie",
+  "Tony",
+  "Sammy",
+  "Victor",
+  "Jasper",
+  "Winston",
+  "Pete",
+  "Greg",
+  "Max",
+  "Hank",
+  "Jojo",
+  "Kiki",
+  "Nana",
+  "Coco",
+  "Peanut",
+  "Pickles",
+  "Waffles",
+  "Biscuit",
+  "Noodles",
+  "Beans",
+  "Mochi",
+  "Pogo",
+  "Ziggy",
+  "Toto",
+  "Dodo",
+  "Bubbles",
+  "Churro",
+  "Pancake",
+  "Muffin",
+  "Tater",
+  "Bonbon",
+  "Skippy",
+  "Ruffles",
+  "Gizmo",
+  "Pebble",
+  "Pudding",
+  "Sprout",
+  "Tango",
+  "Bibi",
+  "Bubu",
+  "Dingus",
+  "Goober",
+  "Boingo",
+  "Oingo",
+  "Zuzu",
+  "Lulu",
+  "Fifi",
+  "Gogo",
+  "Pipi",
+  "Riri",
+  "Mimi",
+  "Tiki",
+  "Tiki-Tak",
+  "BamBam",
+  "Bonko",
+  "Chongo",
+  "Dongo",
+  "Fungo",
+  "Jambo",
+  "Kumbo",
+  "Lombo",
+  "Mongo",
+  "Pongo",
+  "Ringo",
+  "Tongo",
+  "Wongo",
+  "Yoyo",
+  "Zongo",
+  "Chippy",
+  "Chunky",
+  "Fluffy",
+  "Fuzzy",
+  "Grumpy",
+  "Jumpy",
+  "Loopy",
+  "Munchy",
+  "Nibbles",
+  "Puffy",
+  "Snoozy",
+  "Spunky",
+  "Squishy",
+  "Toasty",
+  "Twitchy",
+  "Wiggly",
+  "Zippy",
+  "Bananathan",
+  "Coconathan",
+  "Monkifer"
+];
+
+const sillyTitles = [
+  "the Brave",
+  "the Bouncy",
+  "the Bonker",
+  "the Banana King",
+  "the Vine Lord",
+  "the Coconut Collector",
+  "the Jungle Menace",
+  "the Treetop Terror",
+  "the Peel Master",
+  "the Barrel Breaker",
+  "the Mango Maniac",
+  "the Swing King",
+  "the Tiny Titan",
+  "the Loud Howler",
+  "the Sneaky Simian",
+  "the Mighty Primate",
+  "the Banana Wizard",
+  "the Coconut Knight",
+  "the Jungle Phantom",
+  "the Vine Acrobat",
+  "the Mango Destroyer",
+  "the Barrel Champion",
+  "the Moon Monkey",
+  "the Neon Menace",
+  "the Ancient Ape",
+  "the Golden Bonker",
+  "the Storm Swinger",
+  "the Frozen Fighter",
+  "the Banana Bandit",
+  "the Coconut Bonker",
+  "the Mango Muncher",
+  "the Papaya Puncher",
+  "the Pineapple Primate",
+  "the Bongo Brawler",
+  "the Barrel Roller",
+  "the Jungle Jumper",
+  "the Canopy Climber",
+  "the Vine Voyager",
+  "the Treetop Troublemaker",
+  "the River Rascal",
+  "the Mountain Monkey",
+  "the Temple Terror",
+  "the Ruins Rumbler",
+  "the Moonlight Menace",
+  "the Sunrise Swinger",
+  "the Midnight Muncher",
+  "the Cosmic Coconut",
+  "the Galactic Gorilla",
+  "the Pixel Primate",
+  "the Cyber Chimp",
+  "the Arcade Ape",
+  "the Glitch Gorilla",
+  "the Ultimate Banana",
+  "the Supreme Simian",
+  "the Legendary Lemur",
+  "the Unstoppable Ape",
+  "the Maximum Monkey",
+  "the Mega Macaque",
+  "the Tiny Troublemaker",
+  "the Big Banana",
+  "the Loud Legend",
+  "the Silly Swinger",
+  "the Wobbly Warrior",
+  "the Bouncy Brawler"
+];
+
+const fighterTypes = [
+  { name:"Monkey", damage:1, speed:1, defense:1, special:0 }
+];
+
+const arenaThemes = [
+  { name:"Sunny Jungle", sky1:"#6bc8ff", sky2:"#d8f5ff", ground:"#3d7c2c", grass:"#64a83f", sun:"#ffd83d" },
+  { name:"Sunset Canopy", sky1:"#ff8a5b", sky2:"#ffd1a8", ground:"#5e6f2c", grass:"#8eaa43", sun:"#ffdf6e" },
+  { name:"Moonlit Jungle", sky1:"#19234f", sky2:"#56608f", ground:"#183d29", grass:"#2f6841", sun:"#f5f1c7" },
+  { name:"Misty Mountains", sky1:"#8ca9b8", sky2:"#dbe4e8", ground:"#426b52", grass:"#6f9778", sun:"#e8f0f2" },
+  { name:"Golden Savannah", sky1:"#efb85b", sky2:"#ffe5a8", ground:"#8a6a2f", grass:"#b89542", sun:"#fff1a3" },
+  { name:"Volcano Valley", sky1:"#3b1a1a", sky2:"#b4492d", ground:"#3b2a22", grass:"#74402d", sun:"#ff6b2d" },
+  { name:"Frozen Banana Peaks", sky1:"#9bd7ff", sky2:"#eefaff", ground:"#9fc7d8", grass:"#cce8f2", sun:"#ffffff" },
+  { name:"Purple Dream Jungle", sky1:"#54398f", sky2:"#cf9cff", ground:"#3f2f62", grass:"#6f4f92", sun:"#ffd7ff" },
+  { name:"Stormy Canopy", sky1:"#26354b", sky2:"#65758d", ground:"#263f34", grass:"#456653", sun:"#cfd8e8" },
+  { name:"Candy Jungle", sky1:"#ff9ed0", sky2:"#ffe0f2", ground:"#86548d", grass:"#ba70bf", sun:"#fff08a" },
+  { name:"Ancient Ruins", sky1:"#c8aa75", sky2:"#f2e1bd", ground:"#665a42", grass:"#8d7c55", sun:"#fff0b0" },
+  { name:"Neon Jungle", sky1:"#12142f", sky2:"#35145f", ground:"#133d35", grass:"#1c8a67", sun:"#67fff1" }
+];
+
+function generateMonkeyName(excluded = []) {
+  for (let tries = 0; tries < 100; tries++) {
+    let name;
+    const roll = Math.random();
+
+    if (roll < 0.18) {
+      name = randomItem(monkeyNames);
+    } else if (roll < 0.70) {
+      name = randomItem(nameStarts) + " " + randomItem(nameEnds);
+    } else {
+      name = randomItem(sillyFirstNames) + " " + randomItem(sillyTitles);
+    }
+
+    if (!excluded.includes(name)) return name;
+  }
+
+  return "Mystery Monkey " + Math.floor(Math.random() * 9999);
+}
+
 function randomName(excluded = []) {
-  const choices = monkeyNames.filter(name => !excluded.includes(name));
-  return choices.length ? randomItem(choices) : "Mystery Monkey";
+  return generateMonkeyName(excluded);
 }
 
 const game = {
@@ -185,7 +740,8 @@ const game = {
   winner: "",
   screenShake: 0,
   time: 0,
-  round: 1
+  round: 1,
+  arena: randomItem(arenaThemes)
 };
 
 const particles = [];
@@ -194,7 +750,7 @@ let championData = null;
 let monkey1, monkey2;
 
 class Monkey {
-  constructor({ name, color, faceColor, x, direction, isChampion = false }) {
+  constructor({ name, color, faceColor, x, direction, isChampion = false, fighterType = null, streak = 0 }) {
     this.name = name;
     this.color = color;
     this.faceColor = faceColor;
@@ -216,6 +772,8 @@ class Monkey {
     this.comboTimer = 0;
     this.target = null;
     this.isChampion = isChampion;
+    this.fighterType = fighterTypes[0];
+    this.streak = streak;
     this.aiDelay = Math.random() * 25;
   }
 
@@ -278,7 +836,7 @@ class Monkey {
     if (distance < 78) this.velocityX -= this.direction * 0.7 * dt;
 
     if (this.attackCooldown <= 0) {
-      Math.random() < 0.62 ? this.punch() : this.kick();
+      Math.random() < 0.5 ? this.punch() : this.kick();
     }
   }
 
@@ -350,6 +908,9 @@ class Monkey {
       playBlockSound();
     } else if (text === "KICK!") {
       playKickSound();
+    } else if (text !== "PUNCH!") {
+      playKickSound();
+      setTimeout(() => playTone(220, 0.18, "sawtooth", 0.08, 70), 40);
     } else {
       playPunchSound();
     }
@@ -578,7 +1139,8 @@ function makeMonkey(data, x, direction, isChampion = false) {
     faceColor: data.faceColor,
     x,
     direction,
-    isChampion
+    isChampion,
+    streak: data.streak || 0
   });
 }
 
@@ -587,8 +1149,8 @@ function createFirstFight() {
   let style2 = randomItem(styles);
   while (style2 === style1) style2 = randomItem(styles);
 
-  const data1 = { name: randomName(), ...style1 };
-  const data2 = { name: randomName([data1.name]), ...style2 };
+  const data1 = { name: randomName(), streak: 0, ...style1 };
+  const data2 = { name: randomName([data1.name]), streak: 0, ...style2 };
 
   monkey1 = makeMonkey(data1, width * 0.25, 1);
   monkey2 = makeMonkey(data2, width * 0.75, -1);
@@ -601,6 +1163,8 @@ function createNextFight() {
   const challengerStyle = randomItem(styles);
   const challenger = {
     name: randomName([championData.name]),
+    fighterType: randomItem(fighterTypes),
+    streak: 0,
     ...challengerStyle
   };
 
@@ -617,13 +1181,14 @@ function createNextFight() {
 }
 
 function drawBackground() {
+  const theme = game.arena;
   const grad = ctx.createLinearGradient(0, 0, 0, groundY);
-  grad.addColorStop(0, "#6bc8ff");
-  grad.addColorStop(1, "#d8f5ff");
+  grad.addColorStop(0, theme.sky1);
+  grad.addColorStop(1, theme.sky2);
   ctx.fillStyle = grad;
   ctx.fillRect(0, 0, width, height);
 
-  ctx.fillStyle = "#ffd83d";
+  ctx.fillStyle = theme.sun;
   ctx.beginPath();
   ctx.arc(width * 0.86, height * 0.16, 48, 0, Math.PI * 2);
   ctx.fill();
@@ -633,9 +1198,9 @@ function drawBackground() {
   drawMountain(width * 0.15, groundY, 260, 210);
   drawMountain(width * 0.72, groundY, 310, 250);
 
-  ctx.fillStyle = "#64a83f";
+  ctx.fillStyle = theme.grass;
   ctx.fillRect(0, groundY - 40, width, 40);
-  ctx.fillStyle = "#3d7c2c";
+  ctx.fillStyle = theme.ground;
   ctx.fillRect(0, groundY, width, height - groundY);
 
   drawTree(80, groundY);
@@ -669,12 +1234,31 @@ function drawMountain(x, y, w, h) {
 function drawTree(x, y) {
   ctx.fillStyle = "#68421f";
   ctx.fillRect(x - 18, y - 150, 36, 150);
+
   ctx.fillStyle = "#2f8a3b";
+
   ctx.beginPath();
   ctx.arc(x, y - 160, 65, 0, Math.PI * 2);
+  ctx.fill();
+
+  ctx.beginPath();
   ctx.arc(x - 35, y - 135, 48, 0, Math.PI * 2);
+  ctx.fill();
+
+  ctx.beginPath();
   ctx.arc(x + 42, y - 135, 50, 0, Math.PI * 2);
   ctx.fill();
+}
+
+function roundRect(ctx, x, y, w, h, r) {
+  const radius = Math.min(r, w / 2, h / 2);
+  ctx.beginPath();
+  ctx.moveTo(x + radius, y);
+  ctx.arcTo(x + w, y, x + w, y + h, radius);
+  ctx.arcTo(x + w, y + h, x, y + h, radius);
+  ctx.arcTo(x, y + h, x, y, radius);
+  ctx.arcTo(x, y, x + w, y, radius);
+  ctx.closePath();
 }
 
 function drawHealthBars() {
@@ -682,13 +1266,27 @@ function drawHealthBars() {
   drawHealthBar(40, 35, barWidth, 30, monkey1, false);
   drawHealthBar(width - barWidth - 40, 35, barWidth, 30, monkey2, true);
 
+  ctx.save();
+  ctx.fillStyle = "rgba(0,0,0,0.62)";
+  ctx.strokeStyle = "rgba(255,255,255,0.25)";
+  ctx.lineWidth = 2;
+  roundRect(ctx, width / 2 - 115, 18, 230, 62, 14);
+  ctx.fill();
+  ctx.stroke();
+
   ctx.fillStyle = "#fff";
-  ctx.strokeStyle = "#222";
-  ctx.lineWidth = 5;
+  ctx.strokeStyle = "#111";
+  ctx.lineWidth = 7;
   ctx.font = "bold 25px Arial";
   ctx.textAlign = "center";
-  ctx.strokeText("ROUND " + game.round, width / 2, 55);
-  ctx.fillText("ROUND " + game.round, width / 2, 55);
+  ctx.strokeText("ROUND " + game.round, width / 2, 46);
+  ctx.fillText("ROUND " + game.round, width / 2, 46);
+
+  ctx.font = "bold 15px Arial";
+  ctx.lineWidth = 5;
+  ctx.strokeText(game.arena.name, width / 2, 69);
+  ctx.fillText(game.arena.name, width / 2, 69);
+  ctx.restore();
 }
 
 function drawHealthBar(x, y, w, h, monkey, reverse) {
@@ -702,11 +1300,39 @@ function drawHealthBar(x, y, w, h, monkey, reverse) {
   ctx.fillStyle = percent < .25 ? "#ef3838" : percent < .5 ? "#ffc52e" : "#46d34f";
   ctx.fillRect(reverse ? x + w - healthWidth : x, y, healthWidth, h);
 
-  ctx.fillStyle = "#fff";
-  ctx.font = "bold 17px Arial";
-  ctx.textAlign = reverse ? "right" : "left";
+  const alignX = reverse ? x + w : x;
   const crown = monkey.isChampion ? " 👑" : "";
-  ctx.fillText(monkey.name + crown + "  " + Math.ceil(monkey.health), reverse ? x + w : x, y - 12);
+  const streakText = monkey.streak > 0 ? " • " + monkey.streak + " wins" : "";
+  const topText = monkey.name + crown + "  " + Math.ceil(monkey.health);
+  const bottomText = monkey.isChampion ? ("Champion" + streakText) : "Challenger";
+
+  ctx.textAlign = reverse ? "right" : "left";
+
+  ctx.font = "bold 17px Arial";
+  const topWidth = ctx.measureText(topText).width;
+  const topBoxX = reverse ? alignX - topWidth - 8 : alignX - 8;
+  ctx.fillStyle = "rgba(0,0,0,0.72)";
+  roundRect(ctx, topBoxX, y - 32, topWidth + 16, 24, 7);
+  ctx.fill();
+
+  ctx.strokeStyle = "#000";
+  ctx.lineWidth = 4;
+  ctx.fillStyle = "#fff";
+  ctx.strokeText(topText, alignX, y - 13);
+  ctx.fillText(topText, alignX, y - 13);
+
+  ctx.font = "bold 13px Arial";
+  const bottomWidth = ctx.measureText(bottomText).width;
+  const bottomBoxX = reverse ? alignX - bottomWidth - 8 : alignX - 8;
+  ctx.fillStyle = "rgba(0,0,0,0.68)";
+  roundRect(ctx, bottomBoxX, y + h + 5, bottomWidth + 16, 21, 6);
+  ctx.fill();
+
+  ctx.strokeStyle = "#000";
+  ctx.lineWidth = 3;
+  ctx.fillStyle = "#fff";
+  ctx.strokeText(bottomText, alignX, y + h + 20);
+  ctx.fillText(bottomText, alignX, y + h + 20);
 }
 
 function createHitParticles(x, y, color) {
@@ -763,9 +1389,11 @@ function drawFloatingTexts() {
     ctx.globalAlpha = Math.min(1, t.life / 20);
     ctx.font = "bold 25px Arial";
     ctx.textAlign = "center";
-    ctx.lineWidth = 5;
-    ctx.strokeStyle = "#222";
+    ctx.lineWidth = 7;
+    ctx.strokeStyle = "rgba(0,0,0,0.9)";
     ctx.fillStyle = t.color;
+    ctx.shadowColor = "rgba(0,0,0,0.65)";
+    ctx.shadowBlur = 6;
     ctx.strokeText(t.text, t.x, t.y);
     ctx.fillText(t.text, t.x, t.y);
     ctx.restore();
@@ -805,10 +1433,12 @@ function endFight(winner) {
   winner.state = "victory";
   winner.isChampion = true;
 
+  winner.streak = (winner.streak || 0) + 1;
   championData = {
     name: winner.name,
     color: winner.color,
-    faceColor: winner.faceColor
+    faceColor: winner.faceColor,
+    streak: winner.streak
   };
 
   restartButton.style.display = "block";
@@ -835,8 +1465,13 @@ function drawWinnerScreen() {
   ctx.fillText(game.winner, width / 2, height * .47);
 
   ctx.font = "bold 24px Arial";
-  ctx.fillText("The champion returns next round!", width / 2, height * .55);
+  ctx.fillText(winnerSummary(), width / 2, height * .55);
   ctx.restore();
+}
+
+function winnerSummary() {
+  const winner = monkey1.name === game.winner ? monkey1 : monkey2;
+  return winner.streak + " win streak";
 }
 
 function nextFight() {
@@ -848,8 +1483,17 @@ function nextFight() {
   game.winner = "";
   game.screenShake = 0;
   game.round++;
+  game.arena = randomItem(arenaThemes);
 
   createNextFight();
+  setTimeout(() => {
+    if (game.state === "countdown") {
+      createFloatingText(width / 2, height * 0.28, randomItem([
+        "A NEW CHALLENGER!","TITLE DEFENSE!","JUNGLE SHOWDOWN!",
+        "MONKEY MAYHEM!","CHAMPIONSHIP FIGHT!","RUMBLE IN THE CANOPY!"
+      ]), "#ffffff");
+    }
+  }, 150);
   restartButton.style.display = "none";
 }
 
@@ -907,7 +1551,11 @@ closeBracketButton.onclick=()=>{
 const oldEndFight=endFight;
 endFight=function(winner){
  oldEndFight(winner);
- bracketHistory.push("Round "+game.round+": "+winner.name+" defeated "+(winner===monkey1?monkey2.name:monkey1.name));
+ const loser = winner===monkey1 ? monkey2 : monkey1;
+ bracketHistory.push(
+   "Round "+game.round+": "+winner.name+" defeated "+loser.name+
+   " with "+Math.ceil(winner.health)+" HP left — streak: "+winner.streak
+ );
  bracketList.innerHTML=bracketHistory.map((x,i)=>"<div><b>"+(i+1)+".</b> "+x+"</div>").join("<hr>");
  bracketButton.style.display="block";
 };
