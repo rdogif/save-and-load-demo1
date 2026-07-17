@@ -1,0 +1,315 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Baby Name Generator</title>
+  <style>
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      color: #159bd2;
+      background: #c9f3ff;
+      font-family: Arial, Helvetica, sans-serif;
+    }
+
+    .page {
+      width: min(900px, calc(100% - 32px));
+      min-height: 100vh;
+      margin: 0 auto;
+      padding: 70px 42px;
+      background: #fff8ce;
+      border-left: 12px solid #f9c8ec;
+      border-right: 12px solid #f9c8ec;
+    }
+
+    .generator {
+      position: relative;
+      max-width: 720px;
+      min-height: 560px;
+      margin: 0 auto;
+      padding: 36px 70px 50px;
+      text-align: center;
+      border: 9px solid #c6f4fa;
+      border-radius: 36px;
+      background: linear-gradient(#f5caec 0%, #d9e2f6 60%, #c9f3fa 100%);
+    }
+
+    h1 {
+      margin: 0 90px 24px;
+      color: #aeeeff;
+      font-size: 58px;
+      line-height: .92;
+      letter-spacing: -3px;
+      text-shadow: 3px 3px 0 #eb9bd5, -2px -2px 0 #4bbce3;
+    }
+
+    .intro { margin: 0 0 24px; font-size: 20px; line-height: 1.35; }
+
+    .balloons { position: absolute; top: 42px; width: 105px; height: 210px; }
+    .balloons.left { left: 20px; }
+    .balloons.right { right: 20px; transform: scaleX(-1); }
+    .balloon { position: absolute; width: 65px; height: 83px; border: 3px solid; border-radius: 50% 50% 47% 47%; background: rgba(255,255,255,.35); }
+    .balloon::after { content: ""; position: absolute; left: 31px; top: 80px; width: 42px; height: 90px; border-left: 3px solid currentColor; border-radius: 50%; transform: rotate(-12deg); }
+    .balloon.blue { left: 4px; color: #25acd9; }
+    .balloon.pink { top: 45px; left: 37px; color: #ef84ca; }
+
+    .choices { display: flex; justify-content: center; gap: 22px; margin: 22px 0 28px; }
+    .gender {
+      width: 210px;
+      padding: 13px 20px;
+      border: 7px solid #fff;
+      border-radius: 50px;
+      font-size: 31px;
+      font-weight: bold;
+      cursor: pointer;
+      background: #fff;
+    }
+    .gender.boy { color: #28aee0; }
+    .gender.girl { color: #ee83ca; }
+    .gender:hover, .gender:focus-visible { border-color: #bceff5; outline: 0; }
+    .gender.selected { border-color: #a9eaf2; }
+
+    .label { margin: 0 0 14px; font-size: 20px; }
+    .result {
+      display: grid;
+      place-items: center;
+      min-height: 126px;
+      padding: 20px;
+      border: 8px solid #bceff4;
+      border-radius: 35px;
+      color: #159bd2;
+      background: #fff;
+      font-size: clamp(38px, 7vw, 58px);
+      overflow-wrap: anywhere;
+    }
+
+    .again {
+      margin-top: 18px;
+      padding: 9px 22px;
+      border: 2px solid #83d3e5;
+      border-radius: 8px;
+      color: #178fc0;
+      background: #eafcff;
+      font-size: 15px;
+      cursor: pointer;
+    }
+    .again:hover { background: #fff; }
+
+    @media (max-width: 650px) {
+      .page { width: 100%; padding: 28px 12px; border-width: 6px; }
+      .generator { min-height: 520px; padding: 30px 18px 40px; border-width: 6px; border-radius: 25px; }
+      h1 { margin: 0 62px 22px; font-size: 43px; }
+      .balloons { top: 35px; transform: scale(.7); transform-origin: top left; }
+      .balloons.left { left: 4px; }
+      .balloons.right { right: -25px; transform: scaleX(-1) scale(.7); }
+      .intro { margin-top: 35px; font-size: 18px; }
+      .choices { gap: 10px; }
+      .gender { width: 45%; padding: 10px; font-size: 25px; }
+    }
+  </style>
+</head>
+<body>
+  <main class="page">
+    <section class="generator">
+      <div class="balloons left" aria-hidden="true"><span class="balloon blue"></span><span class="balloon pink"></span></div>
+      <div class="balloons right" aria-hidden="true"><span class="balloon blue"></span><span class="balloon pink"></span></div>
+
+      <h1>Baby Name Generator</h1>
+      <p class="intro">Select a gender to generate a baby name:</p>
+
+      <div class="choices">
+        <button class="gender boy" id="boy" type="button">♂ Boy</button>
+        <button class="gender girl" id="girl" type="button">Girl ♀</button>
+      </div>
+
+      <p class="label">Your new baby name is:</p>
+      <div class="result" id="result" aria-live="polite">Select Boy or Girl</div>
+      <button class="again" id="again" type="button" hidden>Generate another</button>
+    </section>
+  </main>
+
+  <script>
+    const boyNames = [
+      'Tung Tung Sahur','Tralalero Tralala','Bombardiro Crocodilo',
+      'Cappuccino Assassino','Brr Brr Patapim','Lirili Larila',
+      'Chimpanzini Bananini','Bombombini Gusini','Trippi Troppi',
+      'Bobrito Bandito','Frigo Camelo','Blueberrinni Octopussini',
+      'Orangutini Ananasini','Gorillo Watermelondrillo','Rhino Toasterino',
+      'Espressino Signorino','Mozzarello Goblino','Spaghettino Bambino',
+      'Croissantini Linguini','Tortellini Dragonini','Pepperoni Penguinoni',
+      'Skibidi Bartholomew','Ohio Cornelius','Sigma Gigachadino',
+      'Rizzlord Reginald','Fanum Tax Frederick','Mewing Maximilian',
+      'Goofy Ahh Gilbert','Quandale Dingle','Skibidus Johnson',
+      'John Pork','Lebron James Junior','Mr Beastington',
+      'Grimace Shake Gary','Sussy Baka Benjamin','Amongus Amadeus',
+      'Impostor Theodore','Backrooms Brandon','Gigachad Gregory',
+      'NPC Nathaniel','Side Quest Sebastian','Main Character Marcus',
+      'Aura Farming Austin','Negative Aura Norman','W Rizz William',
+      'Sigma Ohio Walter','Baby Gronk Bartholomew','Livvy Dunne Larry',
+      'Mango Mango Mango','Bing Chilling Billy','IShowSpeedington',
+      'Kai Cenat Junior','Freddy Fazbearington','Huggy Wuggy Harold',
+      'Poppy Playtime Pete','Skibidi Toilet Timothy','Camera Man Carl',
+      'Speaker Man Samuel','TV Man Terrence','Titan Cameroni',
+      'Tung Tung Tralalero','Bombardiro Patapim','Crocodilo Bananini',
+      'Gusini Sahur','Capybara Gigachadino','Sigma Cappuccino',
+      'Ohio Assassino','Rizzler Crocodilo','Fanum Taxini',
+      'Mewing Linguini','Skibidi Spaghettini','Gooberino Bambino',
+      'Yapmaster Yappington','Bro Really Said That','Chat Is This Real',
+      'Lil Bro Thinks','Bludington Jones','Unc Status Ulrich',
+      'Cooked Christopher','Locked In Lorenzo','Delulu Demetrius',
+      'Glazington III','Crashout Craig','Aura Maxxer Alex',
+      'RDO Sahur','Tung Tung Das','Skibidi Rishbot','Brainrot Benjamin',
+      'Italiano Ohio','Tralalero Junior','Bananini Bob','Crocodilo Craig',
+      'Patapim Patrick','Gusini Gavin','Sahur Simon','Toilet Theodore'
+    ];
+
+    const girlNames = [
+      'Ballerina Cappuccina','Trulimero Trulicina','La Vaca Saturno Saturnita',
+      'Bananita Dolfinita','Cappuccina Bananina','Mozzarella Ballerina',
+      'Tralalera Tralala','Bombardira Crocodila','Patapima Bananina',
+      'Lirilina Larila','Chimpanzina Bananina','Bombombina Gusina',
+      'Trippa Troppa','Bobrita Bandita','Friga Camela',
+      'Blueberrinna Octopussina','Orangutina Ananasina','Gorilla Watermelonella',
+      'Espressina Signorina','Spaghettina Bambina','Croissantina Linguina',
+      'Tortellina Dragonina','Pepperonina Penguinina','Skibidi Bartholomea',
+      'Ohio Cornelia','Sigma Gigachadina','Rizzler Regina',
+      'Fanum Tax Fiona','Mewing Mia','Goofy Ahh Gabriella',
+      'Quandale Dingleberry','Sussy Baka Bella','Amongus Amelia',
+      'Impostor Isabella','Backrooms Brianna','Gigachad Georgia',
+      'NPC Natalia','Side Quest Sophia','Main Character Madison',
+      'Aura Farming Ava','Negative Aura Nora','W Rizz Wendy',
+      'Sigma Ohio Olivia','Baby Gronk Brenda','Livvy Dunne Linda',
+      'Mango Mango Maya','Bing Chilling Bianca','Grimace Shake Grace',
+      'Poppy Playtime Penelope','Skibidi Toilet Talia','Camera Woman Caroline',
+      'Speaker Woman Samantha','TV Woman Victoria','Titan Camerina',
+      'Tung Tung Ballerina','Cappuccina Patapima','Crocodila Bananina',
+      'Gusina Sahur','Capybara Gigachadina','Sigma Cappuccina',
+      'Ohio Ballerina','Rizzlerina Crocodila','Fanum Taxina',
+      'Mewing Linguina','Skibidi Spaghettina','Gooberina Bambina',
+      'Yapmaster Yappington','Chat Is This Real','Girl Really Said That',
+      'Lil Bro Thinks','Bludina Jones','Auntie Status Audrey',
+      'Cooked Catherine','Locked In Lola','Delulu Diana',
+      'Glazing Queen III','Crashout Chloe','Aura Maxxer Alice',
+      'RDO Cappuccina','Tung Tung Tessa','Skibidi Rishbot',
+      'Brainrot Brianna','Italiana Ohio','Tralalera Junior',
+      'Bananina Bella','Crocodila Claire','Patapima Patricia',
+      'Gusina Gia','Sahur Serena','Toilet Theodora','Princess Brainrot'
+    ];
+
+    const boyFirstParts = [
+      'Tung Tung Tung Sahur','Tralalero','Bombardiro','Crocodilo','Patapim',
+      'Chimpanzini','Bananini','Bombombini','Gusini','Trippi Troppi',
+      'Skibidi','Ohio','Sigma','Rizzler','Fanum Tax','Mewing','Gigachad',
+      'Quandale','John Pork','Baby Gronk','Grimace Shake','Amongus','Impostor',
+      'Backrooms','NPC','Side Quest','Main Character','Aura Farmer','Crashout',
+      'Locked In','Negative Aura','Goofy Ahh','Yapmaster','Unc Status',
+      'Cooked','Delulu','Mango Mango Mango','Bing Chilling','Camera Man',
+      'Speaker Man','TV Man','Titan Cameraman','Freddy Fazbear','Huggy Wuggy',
+      'Capybara','Spaghettino','Mozzarello','Pepperoni','Espressino'
+    ];
+
+    const boyLastParts = [
+      'Mason 67','Bartholomew III','McRizz','Ohio Junior','Sahurson',
+      'Bananini 9000','Gigachadino','Cappuccino','Assassino','Dingle',
+      'Porkington','Maximus Prime','The Rizzler','Aura Maxxer','Tax Collector',
+      'Sigma Pants','Toiletson','Crocodilo Junior','Patapim Senior','Brainrot IV',
+      'W Rizz','No Aura','Sidequest Jones','Yappington','Bambino',
+      'Linguini','Dragonini','Penguinoni','Toasterino','Goblino',
+      'Watermelondrillo','Ananasini','Octopussini','Camelino','Bandito'
+    ];
+
+    const girlFirstParts = [
+      'Ballerina Cappuccina','Tralalera','Bombardira','Crocodila','Patapima',
+      'Chimpanzina','Bananina','Bombombina','Gusina','Trippa Troppa',
+      'Skibidi','Ohio','Sigma','Rizzlerina','Fanum Taxina','Mewing','Gigachadina',
+      'Quandalia','Jane Pork','Baby Gronkina','Grimace Shake','Amongus','Impostora',
+      'Backrooms','NPC','Side Quest','Main Character','Aura Farmer','Crashout',
+      'Locked In','Negative Aura','Goofy Ahh','Yap Queen','Auntie Status',
+      'Cooked','Delulu','Mango Mango Maya','Bing Chilling','Camera Woman',
+      'Speaker Woman','TV Woman','Titan Camerawoman','Freddy Fazbearina',
+      'Capybara','Spaghettina','Mozzarella','Pepperonina','Espressina'
+    ];
+
+    const girlLastParts = [
+      'Madison 67','Bartholomea III','McRizz','Ohio Junior','Sahurina',
+      'Bananina 9000','Gigachadina','Cappuccina','Assassina','Dinglina',
+      'Porkington','Maxima Prime','The Rizzlerina','Aura Maxxer','Tax Collector',
+      'Sigma Pants','Toiletina','Crocodila Junior','Patapima Senior','Brainrot IV',
+      'W Rizz','No Aura','Sidequest Jones','Yappington','Bambina',
+      'Linguina','Dragonina','Penguinina','Toasterina','Goblina',
+      'Watermelonella','Ananasina','Octopussina','Camelina','Bandita'
+    ];
+
+    function addBrainrotCombinations(target, firstParts, lastParts) {
+      for (let firstIndex = 0; firstIndex < firstParts.length; firstIndex++) {
+        for (let lastIndex = 0; lastIndex < lastParts.length; lastIndex++) {
+          // Use a repeatable pattern to create hundreds of combinations
+          // without making every possible name feel almost identical.
+          if ((firstIndex * 3 + lastIndex * 5) % 4 !== 0) {
+            target.push(`${firstParts[firstIndex]} ${lastParts[lastIndex]}`);
+          }
+        }
+      }
+    }
+
+    addBrainrotCombinations(boyNames, boyFirstParts, boyLastParts);
+    addBrainrotCombinations(girlNames, girlFirstParts, girlLastParts);
+
+    boyNames.push(
+      'Tung Tung Tung Sahur Mason 67','Mason 67 Sahur','Mason Sixty Seven',
+      'Tung Tung Mason','Sahur Mason 67 Junior','Skibidi Mason 67',
+      'Bombardiro Mason 67','Tralalero Mason 67','Ohio Mason 67',
+      'Sigma Mason 67','Mason 67 Gigachadino','Mason 67 McRizz',
+      'Tung Tung Tung Tung Tung Sahur','Sahur Sahur Sahur Mason',
+      '67 Tralalero Drive','Mason Patapim The 67th','Masonius Sixtysevenini',
+      'LeBronzo Tralalero','IShowMeatball Spaghettini','Kai Cenatini',
+      'Duke Dennisini','CaseOh Raviolini','Goofy Goobertson',
+      'Sir Yaps A Lot','Lord Farquaad Ohio III','Sussy Impostorini',
+      'Chopped Chin Chad','Low Taper Fade Lorenzo','Massive Aura Mason'
+    );
+
+    girlNames.push(
+      'Tung Tung Tung Sahur Madison 67','Madison 67 Sahur','Madison Sixty Seven',
+      'Ballerina Madison 67','Cappuccina Madison 67','Skibidi Madison 67',
+      'Bombardira Madison 67','Tralalera Madison 67','Ohio Madison 67',
+      'Sigma Madison 67','Madison 67 Gigachadina','Madison 67 McRizz',
+      'Tung Tung Ballerina Sahur','Sahur Sahur Sahur Madison',
+      '67 Cappuccina Lane','Madison Patapima The 67th','Madisonia Sixtysevenina',
+      'Livvy Bananina','Grimace Shakina','Quandalia Dingleton',
+      'Duchess Yaps A Lot','Queen Ohio III','Sussy Impostorina',
+      'Low Taper Fade Lola','Massive Aura Madison','Ballerina Brainrotina'
+    );
+
+    const easterEggNames = ['Rishaan Das', 'Jitesh Balasubramanian'];
+
+    let selectedGender = '';
+    let previousName = '';
+
+    function generateName(gender) {
+      selectedGender = gender;
+      const list = gender === 'boy' ? boyNames : girlNames;
+      let name;
+      do {
+        // A small chance of finding one of the two hidden names.
+        name = Math.random() < 1 / 75
+          ? easterEggNames[Math.floor(Math.random() * easterEggNames.length)]
+          : list[Math.floor(Math.random() * list.length)];
+      }
+      while (name === previousName && list.length > 1);
+
+      previousName = name;
+      document.getElementById('result').textContent = name;
+      document.getElementById('again').hidden = false;
+      document.getElementById('boy').classList.toggle('selected', gender === 'boy');
+      document.getElementById('girl').classList.toggle('selected', gender === 'girl');
+    }
+
+    document.getElementById('boy').addEventListener('click', () => generateName('boy'));
+    document.getElementById('girl').addEventListener('click', () => generateName('girl'));
+    document.getElementById('again').addEventListener('click', () => generateName(selectedGender));
+  </script>
+</body>
+</html>
