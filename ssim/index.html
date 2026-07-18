@@ -1525,7 +1525,9 @@
         const bCenter = centroid(bPart);
         const collision = findConvexCollision(aPart,bPart,aCenter,bCenter);
 
-        if (collision && (!best || collision.penetration < best.penetration)) {
+        // Keep the deepest overlapping convex pair. Choosing the shallowest
+        // pair can leave most of a concave body buried inside another body.
+        if (collision && (!best || collision.penetration > best.penetration)) {
           best = collision;
         }
       }
@@ -1593,11 +1595,13 @@
   }
 
   function correctPositions(a,b,collision) {
-    const slop = .25;
-    const percent = .72;
+    const slop = .08;
+    const percent = .88;
+    const inverseMassSum = a.invMass+b.invMass;
+    if (inverseMassSum <= 0) return;
+
     const correctionAmount =
-      Math.max(collision.penetration-slop,0)/
-      (a.invMass+b.invMass)*percent;
+      Math.max(collision.penetration-slop,0)*percent/inverseMassSum;
 
     const correction = mul(collision.normal,correctionAmount);
     a.pos = sub(a.pos,mul(correction,a.invMass));
@@ -1692,7 +1696,9 @@
     if (slowMotion) dt *= .25;
     dt = Math.min(dt,.022);
 
-    const substeps = 5;
+    const fastestBodySpeed = bodies.reduce((fastest,body) =>
+      Math.max(fastest,Math.hypot(body.vel.x,body.vel.y)),0);
+    const substeps = clamp(Math.ceil(5+fastestBodySpeed/450),5,10);
     const step = dt/substeps;
     const gravity = 900;
     const damping = 0.08;
@@ -1753,32 +1759,39 @@
         }
       }
 
-      const contacts = [];
+      // Re-detect collisions every solver pass. The old solver reused one
+      // stale contact even after bodies moved, which could push them farther
+      // together or leave visible overlap in stacks.
+      for (let iteration=0;iteration<9;iteration++) {
+        let foundCollision = false;
 
-      for (let i=0;i<bodies.length;i++) {
-        for (let j=i+1;j<bodies.length;j++) {
-          const a = bodies[i];
-          const b = bodies[j];
+        for (let i=0;i<bodies.length;i++) {
+          for (let j=i+1;j<bodies.length;j++) {
+            const a = bodies[i];
+            const b = bodies[j];
 
-          if (length(sub(a.pos,b.pos))>a.radius+b.radius+3) continue;
+            if (length(sub(a.pos,b.pos))>a.radius+b.radius+2) continue;
 
-          const collision = findCollision(a,b);
-          if (collision) contacts.push({a,b,collision});
+            const collision = findCollision(a,b);
+            if (!collision) continue;
+            foundCollision = true;
+
+            a.sleeping = false;
+            b.sleeping = false;
+            a.sleepTimer = 0;
+            b.sleepTimer = 0;
+
+            applyImpulse(a,b,collision);
+            correctPositions(a,b,collision);
+          }
         }
+
+        if (!foundCollision) break;
       }
 
-      for (let iteration=0;iteration<7;iteration++) {
-        for (const contact of contacts) {
-          applyImpulse(contact.a,contact.b,contact.collision);
-        }
-      }
-
-      for (const contact of contacts) {
-        correctPositions(contact.a,contact.b,contact.collision);
-
-        contact.a.sleeping = false;
-        contact.b.sleeping = false;
-      }
+      // Position correction can move a body slightly through a wall/floor.
+      // Clamp world bounds again after resolving body-to-body contacts.
+      for (const body of bodies) solveWorldBounds(body);
     }
 
     wind *= Math.pow(.25,dt);
