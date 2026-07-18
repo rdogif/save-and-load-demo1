@@ -141,7 +141,7 @@
         autocomplete="off"
     >
 
-    <p id="resultCount">4 projects</p>
+    <p id="resultCount"></p>
 </div>
 
 <main class="container" id="projectContainer">
@@ -254,6 +254,9 @@
     }
 
     searchBar.addEventListener("input", updateSearch);
+    
+
+updateSearch();
 </script>
 
 </body>
