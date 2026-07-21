@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#f4f4f6" />
+  <title>Dumb Monkey</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <main class="phone-shell">
+    <header class="chat-header">
+      <button class="icon-button" aria-label="Go back" type="button">
+        <span aria-hidden="true">‹</span>
+      </button>
+
+      <div class="profile">
+        <div class="avatar" aria-hidden="true">🐵</div>
+        <div>
+          <h1>Dumb Monkey</h1>
+          <p id="statusText">online</p>
+        </div>
+      </div>
+
+      <div class="header-spacer" aria-hidden="true"></div>
+    </header>
+
+    <section id="chat" class="chat" aria-live="polite" aria-label="Conversation">
+      <div class="day-label">Today</div>
+
+      <div class="message-row monkey">
+        <div class="mini-avatar" aria-hidden="true">🐵</div>
+        <div class="bubble monkey-bubble">ooo ooo hello</div>
+      </div>
+
+      <div class="message-row monkey">
+        <div class="mini-avatar ghost" aria-hidden="true">🐵</div>
+        <div class="bubble monkey-bubble">what u need smart human</div>
+      </div>
+    </section>
+
+    <form id="messageForm" class="composer">
+      <label class="message-box">
+        <span class="sr-only">Message Dumb Monkey</span>
+        <textarea
+          id="messageInput"
+          rows="1"
+          maxlength="1200"
+          placeholder="Message"
+          autocomplete="off"
+        ></textarea>
+      </label>
+
+      <button id="sendButton" class="send-button" type="submit" aria-label="Send message">
+        ↑
+      </button>
+    </form>
+  </main>
+
+  <script src="config.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
