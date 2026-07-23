@@ -42,7 +42,15 @@
     border: 1px solid var(--panel-dark);
     padding: 10px;
     user-select: none;
+    min-width: 190px;
+    min-height: 180px;
+    max-width: calc(100vw - 8px);
+    max-height: calc(100vh - 8px);
+    resize: both;
+    overflow: auto;
   }
+
+  #toolbarHeader { cursor: move; touch-action: none; }
 
   h1 {
     margin: 0 0 3px;
@@ -88,6 +96,7 @@
   }
 
   button:active { transform: translate(1px, 1px); }
+  button:disabled { opacity: .42; cursor: not-allowed; transform: none; }
 
   select { width: 100%; margin-top: 7px; }
 
@@ -125,6 +134,29 @@
   #buildControls.visible { display: grid; }
   #buildControls select { margin: 0; }
   #buildStatus { font: 10px Consolas, monospace; line-height: 1.25; }
+
+  #selectionControls {
+    display: none;
+    grid-template-columns: 1fr 1fr;
+    gap: 6px;
+    margin-top: 7px;
+    padding-top: 7px;
+    border-top: 1px solid #000;
+  }
+
+  #selectionControls.visible { display: grid; }
+  #selectionStatus { grid-column: span 2; font: 10px Consolas, monospace; }
+  #objectInspector {
+    display: none;
+    grid-column: span 2;
+    border-top: 1px solid #aaa;
+    padding-top: 4px;
+  }
+  #objectInspector.visible { display: block; }
+  #objectInspector select, #objectInspector input[type="color"] { width: 100%; margin-top: 3px; }
+  #objectInspector input[type="color"] { height: 28px; padding: 2px; border: 1px solid #000; }
+  .inspector-special { display: none; }
+  .inspector-special.visible { display: block; }
 
   #stats {
     margin-top: 10px;
@@ -375,15 +407,19 @@
 
 
 <section id="toolbar">
-  <h1>Rishaan's Slicing Test</h1>
-  <div class="subtitle">little physics sandbox</div>
+  <div id="toolbarHeader" title="Drag to move · resize from the bottom-right corner">
+    <h1>Rishaan's Slicing Test</h1>
+    <div class="subtitle">little physics sandbox · drag / resize</div>
+  </div>
 
   <div class="mode-grid">
     <button data-mode="slice" class="active">Slice</button>
+    <button data-mode="scissors">Scissors</button>
     <button data-mode="drag">Grab</button>
     <button data-mode="spawn">Spawn</button>
     <button data-mode="delete">Delete</button>
-    <button data-mode="build" class="wide">Constraints</button>
+    <button data-mode="select">Select</button>
+    <button data-mode="build">Constraints</button>
   </div>
 
   <div id="buildControls">
@@ -394,10 +430,12 @@
       <option value="spring">spring</option>
       <option value="chain">chain</option>
       <option value="anchor">static anchor</option>
+      <option value="unbreakable">unbreakable object</option>
       <option value="weld">weld materials</option>
     </select>
-    <label id="constraintStrengthLabel"><span>break strength</span><span id="constraintStrengthValue">1200</span></label>
-    <input id="constraintStrength" type="range" min="250" max="3000" step="50" value="1200">
+    <label id="constraintStrengthLabel"><span>break strength</span><span id="constraintStrengthValue">2,075</span></label>
+    <input id="constraintStrength" type="range" min="0" max="100" step="1" value="35"
+      aria-label="Constraint break strength">
     <label id="motorSpeedLabel"><span>motor speed</span><span id="motorSpeedValue">2.5</span></label>
     <input id="motorSpeed" type="range" min="-8" max="8" step="0.5" value="2.5">
     <button id="toggleConstraints" type="button" aria-pressed="false">Hide constraint labels</button>
@@ -405,7 +443,53 @@
     <div id="buildStatus">Pause, then drag between objects.</div>
   </div>
 
+  <div id="selectionControls">
+    <button id="cloneSelection" type="button">Clone</button>
+    <button id="deleteSelection" type="button">Delete</button>
+    <button id="weldSelectionButton" type="button">Weld</button>
+    <button id="clearSelection" type="button">Clear</button>
+    <div id="selectionStatus">Drag a box around objects.</div>
+    <div id="objectInspector">
+      <label><span>material</span><span>preset</span></label>
+      <select id="inspectMaterial">
+        <option value="custom">custom / current</option>
+        <option value="wood">wood</option><option value="metal">metal</option>
+        <option value="glass">glass</option><option value="rubber">rubber</option>
+        <option value="stone">stone</option><option value="ceramic">ceramic</option>
+        <option value="soft">soft</option><option value="light">light</option>
+        <option value="sticky">sticky</option>
+      </select>
+      <label><span>mass</span><span id="inspectMassValue">1</span></label>
+      <input id="inspectMass" type="range" min="0.05" max="12" step="0.05" value="1">
+      <label><span>gravity</span><span id="inspectGravityValue">1</span></label>
+      <input id="inspectGravity" type="range" min="0" max="3" step="0.05" value="1">
+      <label><span>friction</span><span id="inspectFrictionValue">0.5</span></label>
+      <input id="inspectFriction" type="range" min="0" max="1.5" step="0.05" value="0.5">
+      <label><span>bounce</span><span id="inspectBounceValue">0.2</span></label>
+      <input id="inspectBounce" type="range" min="0" max="1" step="0.02" value="0.2">
+      <label><span>durability</span><span id="inspectDurabilityValue">1000</span></label>
+      <input id="inspectDurability" type="range" min="100" max="5000" step="50" value="1000">
+      <label><span>color</span><span>visual</span></label>
+      <input id="inspectColor" type="color" value="#808080">
+      <div id="conveyorInspector" class="inspector-special">
+        <label><span>belt speed</span><span id="inspectConveyorValue">180</span></label>
+        <input id="inspectConveyor" type="range" min="-500" max="500" step="10" value="180">
+      </div>
+      <div id="explosiveInspector" class="inspector-special">
+        <label><span>blast radius</span><span id="inspectBlastRadiusValue">200</span></label>
+        <input id="inspectBlastRadius" type="range" min="60" max="600" step="10" value="200">
+        <label><span>blast force</span><span id="inspectBlastForceValue">760</span></label>
+        <input id="inspectBlastForce" type="range" min="100" max="2000" step="25" value="760">
+        <label><span>impact fuse</span><span id="inspectFuseValue">0.08s</span></label>
+        <input id="inspectFuse" type="range" min="0" max="5" step="0.05" value="0.08">
+        <button id="detonateSelected" type="button" class="wide">Detonate now</button>
+      </div>
+    </div>
+  </div>
+
   <div class="actions">
+    <button id="undo" type="button" title="Ctrl+Z">Undo</button>
+    <button id="redo" type="button" title="Ctrl+Y">Redo</button>
     <button id="spawnTen">drop 10</button>
     <button id="reset">reset</button>
     <button id="pause" type="button" aria-pressed="false">Pause</button>
@@ -452,6 +536,8 @@
   const ctx = canvas.getContext("2d");
 
   const ui = {
+    toolbar: document.getElementById("toolbar"),
+    toolbarHeader: document.getElementById("toolbarHeader"),
     spawnPanel: document.getElementById("spawnPanel"),
     spawnPanelHeader: document.getElementById("spawnPanelHeader"),
     spawnSearch: document.getElementById("spawnSearch"),
@@ -474,11 +560,43 @@
     motorSpeedLabel: document.getElementById("motorSpeedLabel"),
     toggleConstraints: document.getElementById("toggleConstraints"),
     buildStatus: document.getElementById("buildStatus"),
+    selectionControls: document.getElementById("selectionControls"),
+    selectionStatus: document.getElementById("selectionStatus"),
+    cloneSelection: document.getElementById("cloneSelection"),
+    deleteSelection: document.getElementById("deleteSelection"),
+    weldSelectionButton: document.getElementById("weldSelectionButton"),
+    clearSelection: document.getElementById("clearSelection"),
+    objectInspector: document.getElementById("objectInspector"),
+    inspectMaterial: document.getElementById("inspectMaterial"),
+    inspectMass: document.getElementById("inspectMass"),
+    inspectMassValue: document.getElementById("inspectMassValue"),
+    inspectGravity: document.getElementById("inspectGravity"),
+    inspectGravityValue: document.getElementById("inspectGravityValue"),
+    inspectFriction: document.getElementById("inspectFriction"),
+    inspectFrictionValue: document.getElementById("inspectFrictionValue"),
+    inspectBounce: document.getElementById("inspectBounce"),
+    inspectBounceValue: document.getElementById("inspectBounceValue"),
+    inspectDurability: document.getElementById("inspectDurability"),
+    inspectDurabilityValue: document.getElementById("inspectDurabilityValue"),
+    inspectColor: document.getElementById("inspectColor"),
+    conveyorInspector: document.getElementById("conveyorInspector"),
+    inspectConveyor: document.getElementById("inspectConveyor"),
+    inspectConveyorValue: document.getElementById("inspectConveyorValue"),
+    explosiveInspector: document.getElementById("explosiveInspector"),
+    inspectBlastRadius: document.getElementById("inspectBlastRadius"),
+    inspectBlastRadiusValue: document.getElementById("inspectBlastRadiusValue"),
+    inspectBlastForce: document.getElementById("inspectBlastForce"),
+    inspectBlastForceValue: document.getElementById("inspectBlastForceValue"),
+    inspectFuse: document.getElementById("inspectFuse"),
+    inspectFuseValue: document.getElementById("inspectFuseValue"),
+    detonateSelected: document.getElementById("detonateSelected"),
+    undo: document.getElementById("undo"),
+    redo: document.getElementById("redo"),
     fireGuns: document.getElementById("fireGuns"),
     help: document.getElementById("help")
   };
 
-  ui.help.textContent = "drag to slice \u00b7 pause for constraints \u00b7 right-click to spawn \u00b7 Space pause \u00b7 S slow \u00b7 I impact \u00b7 F fire guns \u00b7 R reset";
+  ui.help.textContent = "drag to slice \u00b7 X scissors \u00b7 box-select and clone \u00b7 Ctrl+Z undo \u00b7 Space pause \u00b7 S slow \u00b7 I impact";
 
   let width = 0;
   let height = 0;
@@ -493,23 +611,35 @@
   let cuts = 0;
   let idCounter = 1;
   let sliceStart = null;
+  let scissorStart = null;
   let heldBody = null;
   let heldLocalPoint = null;
   let pausedRotationOffset = 0;
   let drawSpawnStart = null;
   let deleteTrailPoint = null;
+  let selectionStart = null;
+  let selectionCurrent = null;
+  let selectionMoveLast = null;
+  let selectionAdditive = false;
   let weldDraftParts = [];
   let weldDraftColor = null;
   let constraints = [];
   let constraintsVisible = true;
   let buildStart = null;
   let weldSelection = new Set();
+  let selectedBodies = new Set();
   let explosions = [];
   let mouseTrail = [];
   let wind = 0;
   let flash = 0;
   let previousTime = performance.now();
   let helpRemaining = 5;
+  let historyGestureRecorded = false;
+  let inspectorHistoryRecorded = false;
+  let physicsTime = 0;
+  const undoStack = [];
+  const redoStack = [];
+  const stickyPairLastAttach = new Map();
   const impactBreakQueue = new Map();
   const sawCutQueue = new Map();
   const bulletCutQueue = new Map();
@@ -539,6 +669,62 @@
     y: p.x*Math.sin(a)+p.y*Math.cos(a)
   });
   const clamp = (v,a,b) => Math.max(a,Math.min(b,v));
+  const wrapAngle = angle => Math.atan2(Math.sin(angle),Math.cos(angle));
+
+  function captureScene() {
+    return structuredClone({
+      bodies,constraints,cuts,idCounter,weldDraftParts,weldDraftColor,physicsTime,
+      selectedBodyIds:[...selectedBodies].map(body=>body.id)
+    });
+  }
+
+  function updateHistoryButtons() {
+    ui.undo.disabled=undoStack.length===0;
+    ui.redo.disabled=redoStack.length===0;
+  }
+
+  function recordHistory() {
+    undoStack.push(captureScene());
+    if (undoStack.length>50) undoStack.shift();
+    redoStack.length=0;
+    historyGestureRecorded=true;
+    updateHistoryButtons();
+  }
+
+  function restoreScene(snapshot) {
+    const restored=structuredClone(snapshot);
+    bodies=restored.bodies;
+    constraints=restored.constraints;
+    cuts=restored.cuts;
+    idCounter=restored.idCounter;
+    weldDraftParts=restored.weldDraftParts;
+    weldDraftColor=restored.weldDraftColor;
+    physicsTime=restored.physicsTime||0;
+    const selectedIds=new Set(restored.selectedBodyIds||[]);
+    selectedBodies=new Set(bodies.filter(body=>selectedIds.has(body.id)));
+    weldSelection.clear();
+    explosions=[];
+    heldBody=null; heldLocalPoint=null; sliceStart=null; scissorStart=null; drawSpawnStart=null;
+    deleteTrailPoint=null; buildStart=null; selectionStart=null; selectionCurrent=null; selectionMoveLast=null;
+    impactBreakQueue.clear(); sawCutQueue.clear(); bulletCutQueue.clear(); deformationQueue.clear();
+    stickyPairLastAttach.clear();
+    previousTime=performance.now();
+    updateSelectionStatus();
+  }
+
+  function undoScene() {
+    if (!undoStack.length) return;
+    redoStack.push(captureScene());
+    restoreScene(undoStack.pop());
+    updateHistoryButtons();
+  }
+
+  function redoScene() {
+    if (!redoStack.length) return;
+    undoStack.push(captureScene());
+    restoreScene(redoStack.pop());
+    updateHistoryButtons();
+  }
 
   function resize() {
     pixelRatio = Math.min(devicePixelRatio || 1, 2);
@@ -705,14 +891,14 @@
   }
 
   assignMaterial("box rectangle line compound triangle pentagon hexagon octagon cross arrow star heart crown house tree cactus bone tungtung", "wood");
-  assignMaterial("sword axe hammer saw laser gun bullet anvil anchor tank knight robot trophy key magnet", "metal");
+  assignMaterial("sword axe hammer saw laser gun bullet conveyor anvil anchor tank knight robot trophy key magnet", "metal");
   assignMaterial("shield creeper zombie skeleton enderman skull moon sun planet gem diamond", "stone");
   assignMaterial("phone camera flask hourglass submarine ufo rocket plane", "glass", {density:1.35,restitution:.11});
   assignMaterial("human amongus astronaut ninja ghost snowman alien toilet", "soft");
   assignMaterial("ragdollhead ragdolltorso ragdolllimb", "soft", {density:.9,restitution:.06,impactStrength:1100});
   assignMaterial("duck fish cat bat capybara doge cheems shrekhead tralalero bombardino", "soft", {density:.78,airDrag:.18});
   assignMaterial("controller boot donut ball circle", "rubber");
-  assignMaterial("pizza mushroom cup flower cloud banana lightning", "light");
+  assignMaterial("pizza mushroom cup banana apple burger cake cookie fries flower cloud lightning", "light");
 
   Object.assign(MATERIAL_BY_TYPE, {
     circle:{...MATERIAL_PRESETS.rubber,density:1.05,restitution:.56,dynamicFriction:.58},
@@ -723,6 +909,11 @@
     submarine:{...MATERIAL_PRESETS.metal,density:1.75,airDrag:.09},
     pizza:{...MATERIAL_PRESETS.soft,density:.58,restitution:.04,dynamicFriction:.74},
     banana:{...MATERIAL_PRESETS.soft,density:.55,restitution:.08,dynamicFriction:.70},
+    apple:{...MATERIAL_PRESETS.soft,density:.72,restitution:.12,dynamicFriction:.68},
+    burger:{...MATERIAL_PRESETS.soft,density:.68,restitution:.04,dynamicFriction:.76},
+    cake:{...MATERIAL_PRESETS.soft,density:.61,restitution:.03,dynamicFriction:.72},
+    cookie:{...MATERIAL_PRESETS.soft,density:.56,restitution:.08,dynamicFriction:.66},
+    fries:{...MATERIAL_PRESETS.light,density:.34,restitution:.05,dynamicFriction:.64},
     flower:{...MATERIAL_PRESETS.light,density:.38,airDrag:.34,angularDrag:.30},
     lightning:{...MATERIAL_PRESETS.metal,density:.92,restitution:.10,airDrag:.13},
     snowman:{...MATERIAL_PRESETS.soft,density:.88,restitution:.04,dynamicFriction:.58},
@@ -751,13 +942,23 @@
     materialmetal:{...MATERIAL_PRESETS.metal,impactStrength:1250,shatterCount:1},
     materialrubber:{...MATERIAL_PRESETS.rubber,restitution:.62,impactStrength:1650,shatterCount:1},
     materialice:{...MATERIAL_PRESETS.glass,density:.92,restitution:.08,staticFriction:.10,dynamicFriction:.055,floorDrag:.32,impactStrength:300,shatterCount:7},
-    materialfoam:{...MATERIAL_PRESETS.light,density:.22,restitution:.03,staticFriction:.82,dynamicFriction:.68,airDrag:.62,angularDrag:.52,gravityScale:.82,impactStrength:1800,shatterCount:1}
+    materialfoam:{...MATERIAL_PRESETS.light,density:.22,restitution:.03,staticFriction:.82,dynamicFriction:.68,airDrag:.62,angularDrag:.52,gravityScale:.82,impactStrength:1800,shatterCount:1},
+    materialsticky:{...MATERIAL_PRESETS.soft,density:.82,restitution:.01,staticFriction:1.15,dynamicFriction:.94,impactStrength:1600,shatterCount:1,sticky:true,adhesiveStrength:760}
   });
 
   const MATERIAL_SAMPLE_TYPES = new Set([
     "materialglass","materialceramic","materialwood","materialstone",
-    "materialmetal","materialrubber","materialice","materialfoam"
+    "materialmetal","materialrubber","materialice","materialfoam","materialsticky"
   ]);
+
+  const FOOD_TYPES = new Set([
+    "pizza","mushroom","donut","cup","banana","apple","burger","cake","cookie","fries"
+  ]);
+  const FOOD_COLORS = {
+    pizza:"#e5b84f",mushroom:"#d05b4f",donut:"#d58aa8",cup:"#6da1b7",
+    banana:"#e4bd32",apple:"#c9483e",burger:"#d69a4e",cake:"#e7a7bd",
+    cookie:"#b9783f",fries:"#d34b3f"
+  };
 
   const isDraggedSpawnType = type =>
     type === "line" || type === "rectangle" || type === "compound" ||
@@ -771,7 +972,8 @@
     materialmetal:"#929ba5",
     materialrubber:"#c94d55",
     materialice:"rgba(170,225,248,.72)",
-    materialfoam:"#e8cf65"
+    materialfoam:"#e8cf65",
+    materialsticky:"#b26cc7"
   };
 
   const materialFor = type => ({...(MATERIAL_BY_TYPE[type] || MATERIAL_PRESETS.neutral)});
@@ -820,6 +1022,7 @@
       deformAmount:options.deformAmount || 0,
       deformLimit:options.deformLimit || .45,
       deformCooldown:0,
+      unbreakable:options.unbreakable || false,
       textureRemoved:options.textureRemoved || false,
       isStatic:false
     };
@@ -905,6 +1108,7 @@
       color:options.color || palette[Math.floor(Math.random()*palette.length)],
       shapeType:"compound",
       isCompound:true,
+      hideInternalSeams:options.hideInternalSeams || false,
       material,
       mass,
       invMass:1/mass,
@@ -921,6 +1125,7 @@
       sawFragment:options.sawFragment || false,
       laserGrace:options.laserGrace || 0,
       laserGeneration:options.laserGeneration || 0,
+      unbreakable:options.unbreakable || false,
       textureRemoved:options.textureRemoved || false,
       isStatic:false
     };
@@ -956,12 +1161,13 @@
     return [add(start,normal),add(end,normal),sub(end,normal),sub(start,normal)];
   }
 
-  function addRagdollJoint(a,b,point) {
+  function addRagdollJoint(a,b,point,minAngle,maxAngle) {
     constraints.push({
       id:idCounter++,kind:"hinge",a,b,
       localA:rotate(sub(point,a.pos),-a.angle),
       localB:rotate(sub(point,b.pos),-b.angle),
-      worldB:null,restLength:0,strength:Infinity,motorSpeed:0,load:0,age:0
+      worldB:null,restLength:0,strength:Infinity,motorSpeed:0,load:0,age:0,
+      referenceAngle:wrapAngle(b.angle-a.angle),minAngle,maxAngle
     });
   }
 
@@ -998,15 +1204,15 @@
     const upperRightLeg=makeBody(limbPolygon(rightHip,rightKnee,r*.21),"ragdolllimb",pants);
     const lowerRightLeg=makeBody(limbPolygon(rightKnee,rightFoot,r*.18),"ragdolllimb",pants);
 
-    addRagdollJoint(torso,head,neck);
-    addRagdollJoint(torso,upperLeftArm,leftShoulder);
-    addRagdollJoint(upperLeftArm,lowerLeftArm,leftElbow);
-    addRagdollJoint(torso,upperRightArm,rightShoulder);
-    addRagdollJoint(upperRightArm,lowerRightArm,rightElbow);
-    addRagdollJoint(torso,upperLeftLeg,leftHip);
-    addRagdollJoint(upperLeftLeg,lowerLeftLeg,leftKnee);
-    addRagdollJoint(torso,upperRightLeg,rightHip);
-    addRagdollJoint(upperRightLeg,lowerRightLeg,rightKnee);
+    addRagdollJoint(torso,head,neck,-.55,.55);
+    addRagdollJoint(torso,upperLeftArm,leftShoulder,-1.55,1.35);
+    addRagdollJoint(upperLeftArm,lowerLeftArm,leftElbow,-.2,2.25);
+    addRagdollJoint(torso,upperRightArm,rightShoulder,-1.35,1.55);
+    addRagdollJoint(upperRightArm,lowerRightArm,rightElbow,-2.25,.2);
+    addRagdollJoint(torso,upperLeftLeg,leftHip,-.95,1.05);
+    addRagdollJoint(upperLeftLeg,lowerLeftLeg,leftKnee,-.15,1.9);
+    addRagdollJoint(torso,upperRightLeg,rightHip,-1.05,.95);
+    addRagdollJoint(upperRightLeg,lowerRightLeg,rightKnee,-1.9,.15);
     return torso;
   }
 
@@ -1504,6 +1710,32 @@
       vertices=regularPolygon(x,y,r*.72,20,0);
     } else if (type === "donut") {
       vertices=regularPolygon(x,y,r,20,0);
+    } else if (type === "apple") {
+      vertices=[
+        {x:x-r*.62,y:y-r*.58},{x:x-r*.2,y:y-r*.76},{x:x,y:y-r*.62},
+        {x:x+r*.2,y:y-r*.76},{x:x+r*.62,y:y-r*.58},{x:x+r*.82,y:y-r*.12},
+        {x:x+r*.68,y:y+r*.44},{x:x+r*.28,y:y+r*.86},{x:x,y:y+r*.72},
+        {x:x-r*.28,y:y+r*.86},{x:x-r*.68,y:y+r*.44},{x:x-r*.82,y:y-r*.12}
+      ];
+    } else if (type === "burger") {
+      vertices=[
+        {x:x-r*.88,y:y-r*.38},{x:x-r*.62,y:y-r*.72},{x:x-r*.18,y:y-r*.88},
+        {x:x+r*.18,y:y-r*.88},{x:x+r*.62,y:y-r*.72},{x:x+r*.88,y:y-r*.38},
+        {x:x+r,y:y+r*.2},{x:x+r*.72,y:y+r*.68},{x:x+r*.28,y:y+r*.84},
+        {x:x-r*.28,y:y+r*.84},{x:x-r*.72,y:y+r*.68},{x:x-r,y:y+r*.2}
+      ];
+    } else if (type === "cake") {
+      vertices=[
+        {x:x-r*.82,y:y-r*.72},{x:x+r*.72,y:y-r*.58},
+        {x:x+r*.9,y:y+r*.72},{x:x-r*.82,y:y+r*.72}
+      ];
+    } else if (type === "cookie") {
+      vertices=regularPolygon(x,y,r,18,0);
+    } else if (type === "fries") {
+      vertices=[
+        {x:x-r*.72,y:y-r*.62},{x:x+r*.72,y:y-r*.62},
+        {x:x+r*.54,y:y+r*.86},{x:x-r*.54,y:y+r*.86}
+      ];
     } else if (type === "cup") {
       vertices=[
         {x:x-r*.62,y:y-r},{x:x+r*.5,y:y-r},
@@ -1675,6 +1907,11 @@
         {x:x+r*.58,y:y+r},{x:x-r*.72,y:y+r},
         {x:x-r*.88,y:y+r*.7},{x:x-r*.88,y:y-r*.7}
       ];
+    } else if (type === "conveyor") {
+      vertices=[
+        {x:x-r*1.65,y:y-r*.34},{x:x+r*1.65,y:y-r*.34},
+        {x:x+r*1.65,y:y+r*.34},{x:x-r*1.65,y:y+r*.34}
+      ];
     } else if (type === "box") {
       const w = r*(1.15+Math.random()*.65);
       const h = r*(.85+Math.random()*.6);
@@ -1702,6 +1939,11 @@
       shrekhead:"#78a84f",
       toilet:"#e7e7e7",
       banana:"#e4bd32",
+      apple:"#c9483e",
+      burger:"#d69a4e",
+      cake:"#e7a7bd",
+      cookie:"#b9783f",
+      fries:"#d34b3f",
       creeper:"#58a83f",
       zombie:"#68a84f",
       skeleton:"#dedede",
@@ -1711,6 +1953,7 @@
       knight:"#9aa0a8",
       explosive:"#b8443e",
       saw:"#b8bdc2",
+      conveyor:"#59636b",
       laser:"#4f565c",
       gun:"#45484c"
     };
@@ -1726,7 +1969,7 @@
       "#e67e22","#1abc9c","#95a5a6","#ff69b4","#7f8c8d"
     ];
 
-    let bodyColor = MATERIAL_SAMPLE_COLORS[type] || memeColors[type];
+    let bodyColor = MATERIAL_SAMPLE_COLORS[type] || memeColors[type] || FOOD_COLORS[type];
     if(type==="amongus"){
       bodyColor=amongUsColors[(Math.random()*amongUsColors.length)|0];
     }else if(type==="human"){
@@ -1744,10 +1987,15 @@
     if (type==="explosive") {
       body.fuse=null;
       body.blastRadius=Math.max(150,r*5.2);
+      body.blastForce=760;
+      body.fuseDelay=.08;
     } else if (type==="saw") {
       body.angVel=(Math.random()<.5 ? -1 : 1)*5.5;
     } else if (type==="laser") {
       body.laserCooldown=.04;
+    } else if (type==="conveyor") {
+      body.conveyorSpeed=180;
+      setBodyStatic(body,true);
     }
 
     bodies.push(body);
@@ -1775,19 +2023,6 @@
 
   function lineSide(point,a,b) {
     return cross(sub(b,a),sub(point,a));
-  }
-
-  function segmentIntersection(a,b,c,d) {
-    const r = sub(b,a);
-    const s = sub(d,c);
-    const denominator = cross(r,s);
-    if (Math.abs(denominator)<1e-8) return null;
-
-    const t = cross(sub(c,a),s)/denominator;
-    const u = cross(sub(c,a),r)/denominator;
-
-    if (t>=0 && t<=1 && u>=0 && u<=1) return add(a,mul(r,t));
-    return null;
   }
 
   function cleanPolygon(points) {
@@ -1868,8 +2103,434 @@
     return hits.length >= 2;
   }
 
+  function projectPointToSegment(point,start,end) {
+    const delta=sub(end,start);
+    const denominator=dot(delta,delta);
+    const t=denominator>1e-8 ? clamp(dot(sub(point,start),delta)/denominator,0,1) : 0;
+    return {point:add(start,mul(delta,t)),t};
+  }
+
+  function scissorSegmentsInsidePolygon(start,end,vertices) {
+    const delta=sub(end,start);
+    const denominator=dot(delta,delta);
+    if (denominator<25) return [];
+    const parameters=[0,1];
+    for (let i=0;i<vertices.length;i++) {
+      const hit=segmentIntersection(start,end,vertices[i],vertices[(i+1)%vertices.length]);
+      if (!hit) continue;
+      const t=clamp(dot(sub(hit,start),delta)/denominator,0,1);
+      if (!parameters.some(value=>Math.abs(value-t)<1e-4)) parameters.push(t);
+    }
+    parameters.sort((a,b)=>a-b);
+    const segments=[];
+    for (let i=0;i<parameters.length-1;i++) {
+      const from=parameters[i],to=parameters[i+1];
+      if (to-from<1e-4) continue;
+      const midpoint=add(start,mul(delta,(from+to)*.5));
+      if (!pointInPolygon(midpoint,vertices)) continue;
+      const a=add(start,mul(delta,from));
+      const b=add(start,mul(delta,to));
+      if (length(sub(b,a))>=4) segments.push({a,b});
+    }
+    return segments;
+  }
+
+  function connectScissorPoint(body,point) {
+    const cuts=body.scissorCuts||(body.scissorCuts=[]);
+    let closest=null;
+    for (const cut of cuts) {
+      for (const endpoint of [cut.a,cut.b]) {
+        const distance=length(sub(point,endpoint));
+        if (distance<=9 && (!closest || distance<closest.distance)) closest={point:endpoint,distance};
+      }
+    }
+    if (closest) return {...closest.point};
+
+    for (let i=0;i<cuts.length;i++) {
+      const cut=cuts[i];
+      const projection=projectPointToSegment(point,cut.a,cut.b);
+      const distance=length(sub(point,projection.point));
+      if (distance<=8 && projection.t>.04 && projection.t<.96) {
+        const junction={...projection.point};
+        cuts.splice(i,1,{a:{...cut.a},b:junction},{a:junction,b:{...cut.b}});
+        return {...junction};
+      }
+    }
+    return {...point};
+  }
+
+  function insertScissorSegment(body,a,b) {
+    const cuts=body.scissorCuts||(body.scissorCuts=[]);
+    const delta=sub(b,a);
+    const denominator=dot(delta,delta);
+    if (denominator<9) return false;
+    const newPoints=[{point:{...a},t:0},{point:{...b},t:1}];
+    const rebuilt=[];
+
+    // Every crossing becomes a shared graph node. Split both the old cut and
+    // the newly drawn cut so X- and T-junctions form real connected paths.
+    for (const cut of cuts) {
+      const hit=segmentIntersection(a,b,cut.a,cut.b);
+      if (!hit) {
+        rebuilt.push(cut);
+        continue;
+      }
+      const newT=clamp(dot(sub(hit,a),delta)/denominator,0,1);
+      if (!newPoints.some(entry=>Math.abs(entry.t-newT)<1e-4)) {
+        newPoints.push({point:{...hit},t:newT});
+      }
+      const oldDelta=sub(cut.b,cut.a);
+      const oldDenominator=dot(oldDelta,oldDelta);
+      const oldT=oldDenominator>1e-8
+        ? clamp(dot(sub(hit,cut.a),oldDelta)/oldDenominator,0,1)
+        : 0;
+      if (oldT>1e-4 && oldT<1-1e-4) {
+        rebuilt.push({a:{...cut.a},b:{...hit}},{a:{...hit},b:{...cut.b}});
+      } else {
+        rebuilt.push(cut);
+      }
+    }
+
+    const isDuplicate=(start,end)=>rebuilt.some(cut=>
+      (length(sub(cut.a,start))<1.2 && length(sub(cut.b,end))<1.2) ||
+      (length(sub(cut.a,end))<1.2 && length(sub(cut.b,start))<1.2)
+    );
+    newPoints.sort((left,right)=>left.t-right.t);
+    for (let i=0;i<newPoints.length-1;i++) {
+      const start=newPoints[i].point;
+      const end=newPoints[i+1].point;
+      if (length(sub(start,end))<1.5 || isDuplicate(start,end)) continue;
+      rebuilt.push({a:{...start},b:{...end}});
+    }
+    body.scissorCuts=rebuilt;
+    return true;
+  }
+
+  function pointOnPolygonBoundary(point,vertices,tolerance=2.5) {
+    for (let i=0;i<vertices.length;i++) {
+      if (pointSegmentDistance(point,vertices[i],vertices[(i+1)%vertices.length])<=tolerance) return true;
+    }
+    return false;
+  }
+
+  function completedScissorPath(body) {
+    const cuts=body.scissorCuts||[];
+    if (!cuts.length) return null;
+    const nodes=[];
+    const adjacency=[];
+    const nodeFor=point=>{
+      let index=nodes.findIndex(node=>length(sub(node,point))<1.2);
+      if (index<0) { index=nodes.length; nodes.push({...point}); adjacency.push([]); }
+      return index;
+    };
+    for (const cut of cuts) {
+      const a=nodeFor(cut.a),b=nodeFor(cut.b);
+      if (!adjacency[a].includes(b)) adjacency[a].push(b);
+      if (!adjacency[b].includes(a)) adjacency[b].push(a);
+    }
+    const boundaryNodes=nodes.map((point,index)=>pointOnPolygonBoundary(point,body.verts) ? index : -1).filter(index=>index>=0);
+    for (const start of boundaryNodes) {
+      const queue=[start];
+      const previous=new Map([[start,-1]]);
+      while (queue.length) {
+        const current=queue.shift();
+        if (current!==start && boundaryNodes.includes(current) && length(sub(nodes[current],nodes[start]))>3) {
+          const path=[];
+          for (let cursor=current;cursor>=0;cursor=previous.get(cursor)) path.push({...nodes[cursor]});
+          return path.reverse();
+        }
+        for (const next of adjacency[current]) {
+          if (previous.has(next)) continue;
+          previous.set(next,current);
+          queue.push(next);
+        }
+      }
+    }
+    return null;
+  }
+
+  function completedScissorCycle(body) {
+    const cuts=body.scissorCuts||[];
+    const nodes=[];
+    const adjacency=[];
+    const nodeFor=point=>{
+      let index=nodes.findIndex(node=>length(sub(node,point))<1.2);
+      if (index<0) { index=nodes.length; nodes.push({...point}); adjacency.push([]); }
+      return index;
+    };
+    for (const cut of cuts) {
+      const a=nodeFor(cut.a),b=nodeFor(cut.b);
+      if (!adjacency[a].includes(b)) adjacency[a].push(b);
+      if (!adjacency[b].includes(a)) adjacency[b].push(a);
+    }
+    for (let i=0;i<adjacency.length;i++) {
+      adjacency[i].sort((left,right)=>
+        Math.atan2(nodes[left].y-nodes[i].y,nodes[left].x-nodes[i].x)-
+        Math.atan2(nodes[right].y-nodes[i].y,nodes[right].x-nodes[i].x)
+      );
+    }
+    const visited=new Set();
+    const faces=[];
+    for (let startA=0;startA<nodes.length;startA++) {
+      for (const startB of adjacency[startA]) {
+        const startKey=`${startA}:${startB}`;
+        if (visited.has(startKey)) continue;
+        const indices=[startA];
+        let previous=startA,current=startB,closed=false;
+        for (let guard=0;guard<nodes.length*3+8;guard++) {
+          visited.add(`${previous}:${current}`);
+          indices.push(current);
+          const neighbors=adjacency[current];
+          const incomingIndex=neighbors.indexOf(previous);
+          if (incomingIndex<0 || !neighbors.length) break;
+          const next=neighbors[(incomingIndex-1+neighbors.length)%neighbors.length];
+          previous=current;
+          current=next;
+          if (previous===startA && current===startB) { closed=true; break; }
+        }
+        if (!closed) continue;
+        indices.pop();
+        if (indices.length<3 || new Set(indices).size!==indices.length) continue;
+        const polygon=indices.map(index=>nodes[index]);
+        const area=polygonArea(polygon);
+        if (area>1 && pointInPolygon(centroid(polygon),body.verts)) faces.push(polygon);
+      }
+    }
+    if (!faces.length) return null;
+    faces.sort((left,right)=>Math.abs(polygonArea(left))-Math.abs(polygonArea(right)));
+    return cleanPolygon(faces[0]);
+  }
+
+  function subtractConvexPolygon(subjects,clipPolygon) {
+    let candidates=subjects.map(polygon=>makeCCW(polygon));
+    const outside=[];
+    const clip=makeCCW(clipPolygon);
+    for (let edge=0;edge<clip.length && candidates.length;edge++) {
+      const next=[];
+      for (const polygon of candidates) {
+        const inside=clipByLine(polygon,clip[edge],clip[(edge+1)%clip.length],true);
+        const rejected=clipByLine(polygon,clip[edge],clip[(edge+1)%clip.length],false);
+        if (rejected.length>=3 && Math.abs(polygonArea(rejected))>.7) outside.push(rejected);
+        if (inside.length>=3 && Math.abs(polygonArea(inside))>.7) next.push(inside);
+      }
+      candidates=next;
+    }
+    return outside;
+  }
+
+  function splitBodyAlongScissorCycle(body,rawCycle) {
+    const cycle=makeCCW(cleanPolygon(rawCycle||[]));
+    const cycleArea=Math.abs(polygonArea(cycle));
+    const minimumArea=clamp(Math.abs(polygonArea(body.verts))*.0025,.8,12);
+    if (cycle.length<3 || cycleArea<minimumArea || !isStableDeformedPolygon(cycle,minimumArea)) return null;
+
+    let remaining=(body.polygons||[body.verts]).map(polygon=>polygon.map(point=>({...point})));
+    for (const triangle of triangulate(cycle)) {
+      remaining=subtractConvexPolygon(remaining,triangle);
+      if (!remaining.length) return null;
+    }
+    const remainingArea=remaining.reduce((sum,polygon)=>sum+Math.abs(polygonArea(polygon)),0);
+    if (remainingArea<minimumArea) return null;
+
+    const toWorld=polygon=>polygon.map(point=>add(body.pos,rotate(point,body.angle)));
+    const outer=bodyFromCompoundPolygons(remaining.map(toWorld),{
+      color:body.color,material:body.material,vel:body.vel,angVel:body.angVel
+    });
+    const rawInnerWorld=toWorld(cycle);
+    const innerCenter=centroid(rawInnerWorld);
+    const innerRadius=Math.max(...rawInnerWorld.map(point=>length(sub(point,innerCenter))));
+    const kerfScale=innerRadius>1 ? Math.max(.94,(innerRadius-.8)/innerRadius) : 1;
+    // Leave a narrow physical kerf. Translating a perfect-fit cutout made it
+    // overlap the opposite wall of its hole and caused a violent resume impulse.
+    const innerWorld=rawInnerWorld.map(point=>add(innerCenter,mul(sub(point,innerCenter),kerfScale)));
+    const inner=bodyFromWorldVertices(innerWorld,{
+      color:body.color,shapeType:body.shapeType,material:body.material,
+      vel:velocityAtPoint(body,innerCenter),angVel:body.angVel,sawFragment:body.sawFragment
+    });
+    if (!outer || !inner) return null;
+    outer.shapeType=body.shapeType;
+    outer.hideInternalSeams=true;
+    for (const piece of [outer,inner]) {
+      piece.textureRemoved=true;
+      piece.ragdollGroup=body.ragdollGroup;
+      for (const key of ["conveyorSpeed","blastRadius","blastForce","fuseDelay","bulletOwner"]) {
+        if (body[key]!=null) piece[key]=body[key];
+      }
+    }
+    const remainingCuts=(body.scissorCuts||[]).filter(cut=>{
+      const midpoint=mul(add(cut.a,cut.b),.5);
+      return !cycle.some((point,index)=>
+        pointSegmentDistance(midpoint,point,cycle[(index+1)%cycle.length])<1.2
+      );
+    }).map(cut=>({
+      a:add(body.pos,rotate(cut.a,body.angle)),
+      b:add(body.pos,rotate(cut.b,body.angle))
+    }));
+    for (const piece of [outer,inner]) {
+      const preserved=[];
+      for (const polygon of getWorldDrawPolygons(piece)) {
+        for (const cut of remainingCuts) {
+          for (const segment of scissorSegmentsInsidePolygon(cut.a,cut.b,polygon)) {
+            const localA=rotate(sub(segment.a,piece.pos),-piece.angle);
+            const localB=rotate(sub(segment.b,piece.pos),-piece.angle);
+            const duplicate=preserved.some(existing=>
+              (length(sub(existing.a,localA))<1 && length(sub(existing.b,localB))<1) ||
+              (length(sub(existing.a,localB))<1 && length(sub(existing.b,localA))<1)
+            );
+            if (!duplicate && length(sub(localA,localB))>=2) preserved.push({a:localA,b:localB});
+          }
+        }
+      }
+      if (preserved.length) piece.scissorCuts=preserved;
+    }
+    return [outer,inner];
+  }
+
+  function polygonBoundaryLocation(point,vertices) {
+    let best=null;
+    for (let i=0;i<vertices.length;i++) {
+      const projection=projectPointToSegment(point,vertices[i],vertices[(i+1)%vertices.length]);
+      const distance=length(sub(point,projection.point));
+      if (!best || distance<best.distance) best={edge:i,t:projection.t,point:projection.point,distance};
+    }
+    return best;
+  }
+
+  function polygonBoundaryRoute(vertices,start,end) {
+    if (start.edge===end.edge && start.t<=end.t) return [{...start.point},{...end.point}];
+    const route=[{...start.point}];
+    let index=(start.edge+1)%vertices.length;
+    let guard=0;
+    while (guard++<=vertices.length) {
+      route.push({...vertices[index]});
+      if (index===end.edge) break;
+      index=(index+1)%vertices.length;
+    }
+    route.push({...end.point});
+    return route;
+  }
+
+  function splitBodyAlongScissorPath(body,rawPath) {
+    if (!rawPath || rawPath.length<2) return null;
+    const startLocation=polygonBoundaryLocation(rawPath[0],body.verts);
+    const endLocation=polygonBoundaryLocation(rawPath[rawPath.length-1],body.verts);
+    if (!startLocation || !endLocation || startLocation.distance>3 || endLocation.distance>3) return null;
+    const path=rawPath.map(point=>({...point}));
+    path[0]={...startLocation.point};
+    path[path.length-1]={...endLocation.point};
+    const forward=polygonBoundaryRoute(body.verts,startLocation,endLocation);
+    const backward=polygonBoundaryRoute(body.verts,endLocation,startLocation);
+    const firstLocal=cleanPolygon([...path,...backward.slice(1)]);
+    const secondLocal=cleanPolygon([[...path].reverse(),...forward.slice(1)].flat());
+    if (firstLocal.length<3 || secondLocal.length<3) return null;
+    const originalArea=Math.abs(polygonArea(body.verts));
+    const firstArea=Math.abs(polygonArea(firstLocal));
+    const secondArea=Math.abs(polygonArea(secondLocal));
+    const minimumArea=clamp(originalArea*.0025,.8,12);
+    if (firstArea<minimumArea || secondArea<minimumArea || firstArea+secondArea<originalArea*.955) return null;
+    if (!isStableDeformedPolygon(firstLocal,minimumArea) || !isStableDeformedPolygon(secondLocal,minimumArea)) return null;
+
+    const toWorld=polygon=>polygon.map(point=>add(body.pos,rotate(point,body.angle)));
+    const firstWorld=toWorld(firstLocal),secondWorld=toWorld(secondLocal);
+    const chordDirection=normalize(sub(path[path.length-1],path[0]));
+    const normal=length(chordDirection)>1e-7 ? rotate(perpendicular(chordDirection),body.angle) : {x:0,y:-1};
+    const firstCenter=centroid(firstWorld),secondCenter=centroid(secondWorld);
+    const firstSide=Math.sign(dot(sub(firstCenter,body.pos),normal))||1;
+    const secondSide=-firstSide;
+    const separationSpeed=paused ? 0 : 18;
+    const createPiece=(vertices,center,side)=>bodyFromWorldVertices(vertices,{
+      color:body.color,shapeType:body.shapeType,material:body.material,
+      vel:add(velocityAtPoint(body,center),mul(normal,separationSpeed*side)),
+      angVel:body.angVel,sawFragment:body.sawFragment
+    });
+    const firstBody=createPiece(firstWorld,firstCenter,firstSide);
+    const secondBody=createPiece(secondWorld,secondCenter,secondSide);
+    for (const piece of [firstBody,secondBody]) {
+      piece.textureRemoved=true;
+      piece.ragdollGroup=body.ragdollGroup;
+      for (const key of ["conveyorSpeed","blastRadius","blastForce","fuseDelay","bulletOwner"]) {
+        if (body[key]!=null) piece[key]=body[key];
+      }
+    }
+    const oldWorldCuts=(body.scissorCuts||[]).map(cut=>({
+      a:add(body.pos,rotate(cut.a,body.angle)),
+      b:add(body.pos,rotate(cut.b,body.angle))
+    }));
+    for (const piece of [firstBody,secondBody]) {
+      const preserved=[];
+      for (const cut of oldWorldCuts) {
+        const clipped=scissorSegmentsInsidePolygon(cut.a,cut.b,getWorldVertices(piece));
+        for (const segment of clipped) {
+          const localA=rotate(sub(segment.a,piece.pos),-piece.angle);
+          const localB=rotate(sub(segment.b,piece.pos),-piece.angle);
+          const midpoint=mul(add(localA,localB),.5);
+          // The completed cut is now part of the new outer edge, not a pending snip.
+          if (pointOnPolygonBoundary(midpoint,piece.verts,1.1)) continue;
+          if (length(sub(localA,localB))>=2) preserved.push({a:localA,b:localB});
+        }
+      }
+      if (preserved.length) piece.scissorCuts=preserved;
+    }
+    return [firstBody,secondBody];
+  }
+
+  function addScissorSegment(body,worldA,worldB) {
+    const toLocal=point=>rotate(sub(point,body.pos),-body.angle);
+    let a=connectScissorPoint(body,toLocal(worldA));
+    let b=connectScissorPoint(body,toLocal(worldB));
+    if (length(sub(a,b))<3) return false;
+    insertScissorSegment(body,a,b);
+    const path=completedScissorPath(body);
+    const cycle=path ? null : completedScissorCycle(body);
+    if (!path && !cycle) return false;
+    const pieces=path
+      ? splitBodyAlongScissorPath(body,path)
+      : splitBodyAlongScissorCycle(body,cycle);
+    if (!pieces) return false;
+    reattachConstraints(body,pieces);
+    const pending=[...pieces];
+    const finalPieces=[];
+    let completedCuts=1;
+    while (pending.length && completedCuts<8 && bodies.length+pending.length+finalPieces.length<MAX_DYNAMIC_BODIES) {
+      const piece=pending.shift();
+      const nextPath=completedScissorPath(piece);
+      const nextCycle=nextPath ? null : completedScissorCycle(piece);
+      const nextPieces=nextPath
+        ? splitBodyAlongScissorPath(piece,nextPath)
+        : nextCycle ? splitBodyAlongScissorCycle(piece,nextCycle) : null;
+      if (!nextPieces) {
+        finalPieces.push(piece);
+        continue;
+      }
+      reattachConstraints(piece,nextPieces);
+      pending.push(...nextPieces);
+      completedCuts++;
+    }
+    finalPieces.push(...pending);
+    const index=bodies.indexOf(body);
+    if (index>=0) bodies.splice(index,1,...finalPieces);
+    cuts+=completedCuts;
+    flash=Math.max(flash,.13);
+    return true;
+  }
+
+  function performScissorSwipe(start,end) {
+    let recorded=false;
+    for (const body of [...bodies]) {
+      if (!bodies.includes(body)) continue;
+      if (body.unbreakable) continue;
+      const segments=scissorSegmentsInsidePolygon(start,end,getWorldVertices(body));
+      if (!segments.length) continue;
+      if (!recorded) { recordHistory(); recorded=true; }
+      for (const segment of segments) {
+        const split=addScissorSegment(body,segment.a,segment.b);
+        if (split || !bodies.includes(body)) break;
+      }
+    }
+  }
+
   function sliceCompoundBody(body,a,b) {
-    if (body.deformable) return null;
+    if (body.unbreakable || body.deformable) return null;
     const worldPolygons=getWorldDrawPolygons(body);
     const firstPolygons=[];
     const secondPolygons=[];
@@ -1928,14 +2589,16 @@
       partStyles:firstStyles,
       vel:add(velocityAtPoint(body,firstCenter),mul(normal,separationSpeed*firstSide)),
       angVel:body.angVel,
-      sawFragment:body.sawFragment
+      sawFragment:body.sawFragment,
+      hideInternalSeams:body.hideInternalSeams
     });
     const secondBody=bodyFromCompoundPolygons(secondPolygons,{
       color:body.color,
       partStyles:secondStyles,
       vel:add(velocityAtPoint(body,secondCenter),mul(normal,separationSpeed*secondSide)),
       angVel:body.angVel,
-      sawFragment:body.sawFragment
+      sawFragment:body.sawFragment,
+      hideInternalSeams:body.hideInternalSeams
     });
     if (!firstBody || !secondBody) return null;
     firstBody.textureRemoved=true;
@@ -1945,14 +2608,37 @@
     return [firstBody,secondBody];
   }
 
+  function sliceConcaveBody(body,a,b) {
+    const intervals=scissorSegmentsInsidePolygon(a,b,getWorldVertices(body));
+    if (!intervals.length) return null;
+    const fragments=[body];
+    let splits=0;
+
+    // Cut only the finite chords actually travelled inside the silhouette.
+    // Extending the line to infinity could sever a torso below an arm cut.
+    for (const interval of intervals) {
+      const midpoint=mul(add(interval.a,interval.b),.5);
+      const fragmentIndex=fragments.findIndex(fragment=>bodyContainsPoint(fragment,midpoint,3));
+      if (fragmentIndex<0) continue;
+      const fragment=fragments[fragmentIndex];
+      const toLocal=point=>rotate(sub(point,fragment.pos),-fragment.angle);
+      const pieces=splitBodyAlongScissorPath(fragment,[toLocal(interval.a),toLocal(interval.b)]);
+      if (!pieces) continue;
+      fragments.splice(fragmentIndex,1,...pieces);
+      splits++;
+    }
+    return splits ? fragments : null;
+  }
+
   function sliceBody(body,a,b) {
-    if (body.deformable) return null;
+    if (body.unbreakable || body.deformable) return null;
     if (body.isCompound) return sliceCompoundBody(body,a,b);
     const vertices = getWorldVertices(body);
 
     // Do not let the infinite extension of a swipe cut an object. The mouse
     // trail must physically pass through the shape on screen.
     if (!segmentActuallyCrossesPolygon(a,b,vertices)) return null;
+    if (!isConvexPolygon(body.verts)) return sliceConcaveBody(body,a,b);
 
     // Checking which side each vertex is on is more reliable than counting
     // edge intersections. It still works on very thin pieces and when the cut
@@ -2041,7 +2727,7 @@
   }
 
   function queueDeformation(body,worldNormal,impactSpeed,contact=body?.pos) {
-    if (!body?.deformable || impactSpeed<145) return false;
+    if (!body?.deformable || body.unbreakable || impactSpeed<145) return false;
     const previous=deformationQueue.get(body.id);
     if (!previous || impactSpeed>previous.impactSpeed) {
       deformationQueue.set(body.id,{body,worldNormal:{...worldNormal},impactSpeed,contact:{...contact}});
@@ -2122,6 +2808,7 @@
 
   function queueImpactBreak(body,normal,contact,damageSpeed) {
     if (!impactMode || paused || body.impactGrace>0 || body.impactGeneration>=3) return;
+    if (body.unbreakable) return;
     if (body.deformable || ["explosive","saw","laser","gun","bullet"].includes(body.shapeType)) return;
     if (body.radius<14 || body.mass<.024) return;
     const strength=Math.max(1,body.material.impactStrength);
@@ -2148,6 +2835,50 @@
     );
     queueImpactBreak(a,mul(collision.normal,-1),collision.contact,damageFor(a));
     queueImpactBreak(b,collision.normal,collision.contact,damageFor(b));
+  }
+
+  function tryCreateStickyBond(a,b,contact,impactSpeed) {
+    if (!(a.material.sticky || b.material.sticky) || impactSpeed>1150) return;
+    if (["bullet","saw","laser","explosive"].includes(a.shapeType) ||
+        ["bullet","saw","laser","explosive"].includes(b.shapeType)) return;
+    if (constraints.some(constraint=>!constraint.invalid && constraint.kind==="sticky" &&
+      ((constraint.a===a && constraint.b===b) || (constraint.a===b && constraint.b===a)))) return;
+    const key=a.id<b.id ? `${a.id}:${b.id}` : `${b.id}:${a.id}`;
+    if (physicsTime-(stickyPairLastAttach.get(key)||-Infinity)<.75) return;
+    stickyPairLastAttach.set(key,physicsTime);
+    constraints.push({
+      id:idCounter++,kind:"sticky",a,b,
+      localA:rotate(sub(contact,a.pos),-a.angle),
+      localB:rotate(sub(contact,b.pos),-b.angle),
+      worldB:null,restLength:0,
+      strength:Math.max(a.material.adhesiveStrength||0,b.material.adhesiveStrength||0,650),
+      motorSpeed:0,load:0,age:0
+    });
+  }
+
+  function applyConveyorContact(a,b,collision,frameStep) {
+    const conveyor=a.shapeType==="conveyor" ? a : b.shapeType==="conveyor" ? b : null;
+    if (!conveyor) return;
+    const other=conveyor===a ? b : a;
+    if (other.isStatic || other.shapeType==="conveyor" || other.conveyorContactTime===physicsTime) return;
+    const outwardNormal=conveyor===a ? collision.normal : mul(collision.normal,-1);
+    const beltUp=rotate({x:0,y:-1},conveyor.angle);
+    if (dot(outwardNormal,beltUp)<.38) return;
+    other.conveyorContactTime=physicsTime;
+    const tangent=rotate({x:1,y:0},conveyor.angle);
+    const pointVelocity=velocityAtPoint(other,collision.contact);
+    const speedError=(conveyor.conveyorSpeed||0)-dot(pointVelocity,tangent);
+    const radius=sub(collision.contact,other.pos);
+    const lever=cross(radius,tangent);
+    const denominator=other.invMass+lever*lever*other.invInertia;
+    if (denominator<=1e-8) return;
+    const response=1-Math.exp(-16*Math.max(frameStep,.001));
+    const impulseMagnitude=clamp(speedError/denominator*response,-other.mass*180,other.mass*180);
+    const impulse=mul(tangent,impulseMagnitude);
+    other.vel=add(other.vel,mul(impulse,other.invMass));
+    other.angVel+=cross(radius,impulse)*other.invInertia;
+    other.sleeping=false;
+    other.sleepTimer=0;
   }
 
   function impactCut(body,hit,angleOffset=0) {
@@ -2236,6 +2967,7 @@
 
   function queueSawCut(saw,target,contact) {
     if (paused || saw.shapeType!=="saw" || target.shapeType==="saw" || target.sawGrace>0) return;
+    if (target.unbreakable) return;
     if (target.deformable) {
       queueDeformation(target,normalize(sub(target.pos,saw.pos)),Math.max(180,length(saw.vel)+Math.abs(saw.angVel)*saw.radius),contact);
       return;
@@ -2310,6 +3042,7 @@
       let direction=impactDirection;
       if (length(direction)<1e-7) direction=rotate({x:1,y:0},bullet.angle);
       spent.add(bullet);
+      if (target.unbreakable) continue;
       if (target.deformable) {
         queueDeformation(target,direction,Math.max(500,length(bullet.vel)),contact);
         continue;
@@ -2353,6 +3086,7 @@
         if (beamCuts>=5 || bodies.length>=MAX_DYNAMIC_BODIES) break;
         if (target===laser || ["laser","bullet"].includes(target.shapeType)) continue;
         if (target.laserGrace>0 || (target.laserGeneration||0)>=4) continue;
+        if (target.unbreakable) continue;
         if (target.deformable) {
           const projection=clamp(dot(sub(target.pos,start),direction),0,length(sub(end,start)));
           queueDeformation(target,direction,420,add(start,mul(direction,projection)));
@@ -2412,9 +3146,10 @@
     ui.fireGuns.style.display=bodies.some(body=>body.shapeType==="gun") ? "" : "none";
   }
 
-  function armExplosive(body,contact,fuse=.075) {
+  function armExplosive(body,contact,fuse=null) {
     if (body.shapeType!=="explosive" || !bodies.includes(body)) return;
-    body.fuse=body.fuse==null ? fuse : Math.min(body.fuse,fuse);
+    const delay=fuse==null ? (body.fuseDelay??.08) : fuse;
+    body.fuse=body.fuse==null ? delay : Math.min(body.fuse,delay);
     body.explosionPoint=contact ? {...contact} : {...body.pos};
     body.sleeping=false;
     body.sleepTimer=0;
@@ -2424,6 +3159,7 @@
     if (!bodies.includes(explosive)) return;
     const origin=explosive.explosionPoint || explosive.pos;
     const blastRadius=explosive.blastRadius || Math.max(150,explosive.radius*5);
+    const blastForce=explosive.blastForce||760;
     removeBodyConstraints(explosive);
     const survivors=[];
 
@@ -2435,7 +3171,7 @@
       if (surfaceDistance>=blastRadius) { survivors.push(body); continue; }
       const direction=centerDistance>1 ? mul(offset,1/centerDistance) : {x:0,y:-1};
       const falloff=Math.pow(1-surfaceDistance/blastRadius,1.65);
-      const blastSpeed=clamp(760*falloff/Math.sqrt(Math.max(body.mass,.22)),0,1150);
+      const blastSpeed=clamp(blastForce*falloff/Math.sqrt(Math.max(body.mass,.22)),0,Math.max(1150,blastForce*1.35));
       body.vel=add(body.vel,mul(direction,blastSpeed));
       body.angVel+=cross(sub(body.pos,origin),direction)*.0008+(((body.id*29)%17)-8)*.055*falloff;
       body.sleeping=false;
@@ -2448,7 +3184,12 @@
         continue;
       }
 
-      const damageSpeed=280+1450*falloff;
+      if (body.unbreakable) {
+        survivors.push(body);
+        continue;
+      }
+
+      const damageSpeed=(280+1450*falloff)*Math.pow(blastForce/760,.7);
       if (body.deformable) {
         const contact=sub(body.pos,mul(direction,Math.min(body.radius,centerDistance)));
         queueDeformation(body,direction,damageSpeed,contact);
@@ -2477,11 +3218,13 @@
         color:i%3===0 ? "#e6b648" : "#7e302c",
         shapeType:null,
         material:{...MATERIAL_PRESETS.stone,density:.7,impactStrength:9999},
-        vel:add(explosive.vel,mul(direction,260+((i*71)%260))),
+        vel:add(explosive.vel,mul(direction,(260+((i*71)%260))*clamp(blastForce/760,.45,2.4))),
         angVel:(i%2 ? 1 : -1)*(5+i*.35),
         impactGrace:.35,
         impactGeneration:3
       });
+      debris.explosionDebris=true;
+      debris.debrisLife=1.05+(i%5)*.11;
       survivors.push(debris);
     }
 
@@ -2869,6 +3612,7 @@
 
   function deleteAtPoint(point) {
     let constraint=getConstraintAt(point);
+    if (constraint && !historyGestureRecorded) recordHistory();
     while (constraint) {
       constraints=constraints.filter(item=>item!==constraint);
       constraint=getConstraintAt(point);
@@ -2877,12 +3621,15 @@
     // Remove every overlapping body under the eraser, not only the topmost one.
     const touched=bodies.filter(body=>pointInPolygon(point,getWorldVertices(body)));
     if (!touched.length) return;
+    if (!historyGestureRecorded) recordHistory();
     const touchedSet=new Set(touched);
     for (const body of touched) {
       removeBodyConstraints(body);
       weldSelection.delete(body);
+      selectedBodies.delete(body);
     }
     bodies=bodies.filter(body=>!touchedSet.has(body));
+    updateSelectionStatus();
   }
 
   function eraseAlongPath(start,end) {
@@ -2891,15 +3638,27 @@
     for (let i=0;i<=samples;i++) deleteAtPoint(add(start,mul(sub(end,start),i/samples)));
   }
 
+  function bodyContainsPoint(body,point,tolerance=3) {
+    for (const polygon of getWorldDrawPolygons(body)) {
+      if (pointInPolygon(point,polygon)) return true;
+      for (let i=0;i<polygon.length;i++) {
+        if (pointSegmentDistance(point,polygon[i],polygon[(i+1)%polygon.length])<=tolerance) return true;
+      }
+    }
+    return false;
+  }
+
   function reattachConstraints(oldBody,replacements) {
     for (const constraint of constraints) {
       for (const side of ["a","b"]) {
         if (constraint[side]!==oldBody) continue;
         const anchor=constraintAnchor(constraint,side);
-        const replacement=replacements.find(body=>pointInPolygon(anchor,getWorldVertices(body))) ||
-          replacements.reduce((best,body)=>
-            !best || length(sub(body.pos,anchor))<length(sub(best.pos,anchor)) ? body : best,null);
+        const containing=replacements.filter(body=>bodyContainsPoint(body,anchor));
+        const replacement=containing.reduce((best,body)=>
+          !best || length(sub(body.pos,anchor))<length(sub(best.pos,anchor)) ? body : best,null);
         if (!replacement) {
+          // A severed joint must disappear. Falling back to the nearest piece
+          // could attach an arm joint to a disconnected head or distant shard.
           constraint.invalid=true;
           continue;
         }
@@ -2934,7 +3693,7 @@
     const delta=sub(pointB,pointA);
     const distance=length(delta);
     const axis=distance>1e-6 ? mul(delta,1/distance) : {x:1,y:0};
-    const hingeLike=constraint.kind==="hinge" || constraint.kind==="motor";
+    const hingeLike=constraint.kind==="hinge" || constraint.kind==="motor" || constraint.kind==="sticky";
     const error=hingeLike
       ? distance
       : constraint.kind==="spring"
@@ -2991,6 +3750,26 @@
         const correction=mul(axis,Math.min(distance*.62,12));
         a.pos=add(a.pos,mul(correction,a.invMass/linearInverseMass));
         if (b) b.pos=sub(b.pos,mul(correction,b.invMass/linearInverseMass));
+      }
+    }
+
+    if (b && Number.isFinite(constraint.minAngle) && Number.isFinite(constraint.maxAngle)) {
+      const relativeAngle=wrapAngle(b.angle-a.angle-(constraint.referenceAngle||0));
+      const limitedAngle=clamp(relativeAngle,constraint.minAngle,constraint.maxAngle);
+      const violation=relativeAngle-limitedAngle;
+      const inverseAngularMass=a.invInertia+b.invInertia;
+      if (Math.abs(violation)>1e-4 && inverseAngularMass>1e-8) {
+        const correction=clamp(violation,-.11,.11);
+        a.angle+=correction*a.invInertia/inverseAngularMass;
+        b.angle-=correction*b.invInertia/inverseAngularMass;
+        const relativeAngular=b.angVel-a.angVel;
+        if (relativeAngular*violation>0) {
+          const stoppingImpulse=relativeAngular/inverseAngularMass;
+          a.angVel+=stoppingImpulse*a.invInertia;
+          b.angVel-=stoppingImpulse*b.invInertia;
+        }
+        a.sleeping=false; b.sleeping=false;
+        a.sleepTimer=0; b.sleepTimer=0;
       }
     }
 
@@ -3111,6 +3890,10 @@
     // Real frame time is clamped first; slow motion only scales simulation time.
     const clampedRealDt = clamp(realDt,0,.05);
     const dt = clampedRealDt * (slowMotion ? .25 : 1);
+    physicsTime+=dt;
+    if (stickyPairLastAttach.size>500) {
+      for (const [key,time] of stickyPairLastAttach) if (physicsTime-time>5) stickyPairLastAttach.delete(key);
+    }
     for (const body of bodies) body.deformCooldown=Math.max(0,(body.deformCooldown||0)-dt);
 
     const fastestBodySpeed = bodies.reduce((fastest,body) =>
@@ -3202,6 +3985,8 @@
 
             const relative = sub(velocityAtPoint(b,collision.contact),velocityAtPoint(a,collision.contact));
             const impactSpeed = Math.max(0,-dot(relative,collision.normal));
+            tryCreateStickyBond(a,b,collision.contact,impactSpeed);
+            applyConveyorContact(a,b,collision,dt);
             if (a.shapeType==="saw") queueSawCut(a,b,collision.contact);
             if (b.shapeType==="saw") queueSawCut(b,a,collision.contact);
             if (a.shapeType==="bullet") queueBulletCut(a,b,collision.contact);
@@ -3288,8 +4073,13 @@
     processDeformations();
     for (const body of bodies) {
       if (body.shapeType==="bullet") body.bulletLife=(body.bulletLife??1.8)-dt;
+      if (body.explosionDebris) body.debrisLife=(body.debrisLife??1.2)-dt;
     }
-    bodies=bodies.filter(body=>body.shapeType!=="bullet" || body.bulletLife>0);
+    const expiredDebris=new Set(bodies.filter(body=>body.explosionDebris && body.debrisLife<=0));
+    if (expiredDebris.size) {
+      constraints=constraints.filter(constraint=>!expiredDebris.has(constraint.a) && !expiredDebris.has(constraint.b));
+    }
+    bodies=bodies.filter(body=>(body.shapeType!=="bullet" || body.bulletLife>0) && !expiredDebris.has(body));
     bodies = bodies.filter(body =>
       body.pos.y<height+800 &&
       body.pos.x>-800 &&
@@ -3298,6 +4088,11 @@
     constraints=constraints.filter(constraint=>
       !constraint.invalid && bodies.includes(constraint.a) && (!constraint.b || bodies.includes(constraint.b))
     );
+    let selectionChanged=false;
+    for (const body of [...selectedBodies]) {
+      if (!bodies.includes(body)) { selectedBodies.delete(body); selectionChanged=true; }
+    }
+    if (selectionChanged) updateSelectionStatus();
   }
 
   function drawBackground() {
@@ -3586,6 +4381,13 @@
       context.moveTo(minX+w*.2,minY+h*.5); context.lineTo(maxX-w*.2,minY+h*.5);
       context.moveTo(minX+w*.5,minY+h*.2); context.lineTo(minX+w*.5,maxY-h*.2);
       context.stroke();
+    } else if (body.shapeType==="materialsticky") {
+      context.fillStyle="rgba(255,255,255,.58)";
+      for (const [px,py] of [[.18,.25],[.5,.2],[.82,.3],[.3,.65],[.68,.72]]) {
+        context.beginPath();
+        context.arc(minX+w*px,minY+h*py,Math.max(2,Math.min(w,h)*.065),0,Math.PI*2);
+        context.fill();
+      }
     } else if (body.shapeType==="materialceramic") {
       context.strokeStyle="rgba(85,100,120,.45)";
       context.strokeRect(minX+w*.12,minY+h*.12,w*.76,h*.76);
@@ -3663,6 +4465,41 @@
     context.restore();
   }
 
+  function drawConveyorDetails(context,body) {
+    if (body.shapeType!=="conveyor") return;
+    const xs=body.verts.map(point=>point.x), ys=body.verts.map(point=>point.y);
+    const minX=Math.min(...xs), maxX=Math.max(...xs), minY=Math.min(...ys), maxY=Math.max(...ys);
+    const w=maxX-minX, h=maxY-minY;
+    const direction=Math.sign(body.conveyorSpeed||1);
+    const spacing=Math.max(16,h*.72);
+    const offset=((physicsTime*Math.abs(body.conveyorSpeed||0)*.22)%spacing)*direction;
+    context.save(); context.translate(body.pos.x,body.pos.y); context.rotate(body.angle);
+    context.fillStyle="#30363a";
+    context.fillRect(minX+w*.03,minY+h*.18,w*.94,h*.64);
+    context.strokeStyle="#d9dde0";
+    context.lineWidth=Math.max(1.5,h*.055);
+    context.beginPath(); context.moveTo(minX+w*.04,minY+h*.08); context.lineTo(maxX-w*.04,minY+h*.08); context.stroke();
+    context.save();
+    context.beginPath(); context.rect(minX+w*.04,minY+h*.2,w*.92,h*.6); context.clip();
+    for (let x=minX-spacing+offset;x<maxX+spacing;x+=spacing) {
+      context.beginPath();
+      context.moveTo(x-direction*h*.12,0);
+      context.lineTo(x+direction*h*.12,0);
+      context.lineTo(x+direction*h*.02,-h*.12);
+      context.moveTo(x+direction*h*.12,0);
+      context.lineTo(x+direction*h*.02,h*.12);
+      context.stroke();
+    }
+    context.restore();
+    context.fillStyle="#d9dde0";
+    for (const x of [minX+w*.1,maxX-w*.1]) {
+      context.beginPath(); context.arc(x,0,h*.22,0,Math.PI*2); context.fill();
+      context.fillStyle="#59636b"; context.beginPath(); context.arc(x,0,h*.09,0,Math.PI*2); context.fill();
+      context.fillStyle="#d9dde0";
+    }
+    context.restore();
+  }
+
   function drawRagdollDetails(context,body) {
     if (body.shapeType!=="ragdollhead") return;
     const radius=Math.max(...body.verts.map(length));
@@ -3680,6 +4517,67 @@
     context.beginPath();
     context.arc(0,radius*.06,radius*.28,.18*Math.PI,.82*Math.PI);
     context.stroke();
+    context.restore();
+  }
+
+  function drawFoodDetails(context,body) {
+    if (!FOOD_TYPES.has(body.shapeType)) return;
+    const xs=body.verts.map(point=>point.x), ys=body.verts.map(point=>point.y);
+    const minX=Math.min(...xs), maxX=Math.max(...xs), minY=Math.min(...ys), maxY=Math.max(...ys);
+    const w=maxX-minX, h=maxY-minY;
+    context.save(); context.translate(body.pos.x,body.pos.y); context.rotate(body.angle);
+    context.lineWidth=Math.max(1.4,Math.min(w,h)*.045);
+    context.strokeStyle="#4a3025";
+    context.lineCap="round";
+    if (body.shapeType==="apple") {
+      context.lineWidth=Math.max(2,w*.06);
+      context.beginPath(); context.moveTo(0,minY+h*.12); context.lineTo(w*.08,minY-h*.13); context.stroke();
+      context.fillStyle="#5f963f";
+      context.beginPath(); context.ellipse(w*.18,minY-h*.02,w*.18,h*.09,-.35,0,Math.PI*2); context.fill(); context.stroke();
+    } else if (body.shapeType==="burger") {
+      context.fillStyle="#5f9b43"; context.fillRect(minX+w*.08,minY+h*.47,w*.84,h*.12);
+      context.fillStyle="#6f3829"; context.fillRect(minX+w*.05,minY+h*.59,w*.9,h*.17);
+      context.fillStyle="#f0ca45";
+      context.beginPath(); context.moveTo(minX+w*.12,minY+h*.58); context.lineTo(0,minY+h*.7); context.lineTo(maxX-w*.12,minY+h*.58); context.closePath(); context.fill();
+      context.fillStyle="#f4e5b0";
+      for (const [px,py] of [[.35,.18],[.52,.12],[.66,.22]]) {
+        context.beginPath(); context.arc(minX+w*px,minY+h*py,Math.max(1.2,w*.018),0,Math.PI*2); context.fill();
+      }
+    } else if (body.shapeType==="cake") {
+      context.strokeStyle="#fff1e3"; context.lineWidth=Math.max(3,h*.11);
+      context.beginPath(); context.moveTo(minX+w*.06,minY+h*.18); context.lineTo(maxX-w*.08,minY+h*.25); context.stroke();
+      context.strokeStyle="#b85e79"; context.lineWidth=Math.max(2,h*.06);
+      context.beginPath(); context.moveTo(minX+w*.08,minY+h*.62); context.lineTo(maxX-w*.04,minY+h*.62); context.stroke();
+      context.strokeStyle="#6b402b"; context.lineWidth=Math.max(2,w*.045);
+      context.beginPath(); context.moveTo(0,minY+h*.08); context.lineTo(0,minY-h*.24); context.stroke();
+      context.fillStyle="#f2c84b"; context.beginPath(); context.arc(0,minY-h*.3,Math.max(2,w*.045),0,Math.PI*2); context.fill();
+    } else if (body.shapeType==="cookie") {
+      context.fillStyle="#4e2e24";
+      for (const [px,py] of [[-.32,-.25],[.2,-.38],[.38,.12],[-.12,.2],[-.38,.36],[.15,.45]]) {
+        context.beginPath(); context.arc(px*w*.72,py*h*.72,Math.max(2,Math.min(w,h)*.055),0,Math.PI*2); context.fill();
+      }
+    } else if (body.shapeType==="fries") {
+      context.strokeStyle="#efc747"; context.lineWidth=Math.max(4,w*.09);
+      for (const x of [-.38,-.18,.04,.26,.43]) {
+        context.beginPath(); context.moveTo(x*w,minY+h*.35); context.lineTo(x*w+(x>.2 ? w*.05 : 0),minY-h*(.18+Math.abs(x)*.22)); context.stroke();
+      }
+      context.fillStyle="#f2c84a"; context.beginPath(); context.arc(0,minY+h*.72,Math.min(w,h)*.16,0,Math.PI*2); context.fill();
+    } else if (body.shapeType==="pizza") {
+      context.strokeStyle="#f4d36a"; context.lineWidth=Math.max(3,w*.08);
+      context.beginPath(); context.moveTo(minX+w*.12,minY+h*.12); context.lineTo(0,maxY-h*.12); context.lineTo(maxX-w*.12,minY+h*.12); context.stroke();
+      context.fillStyle="#b9483d";
+      for (const [px,py] of [[-.18,-.16],[.24,-.1],[.02,.26]]) {
+        context.beginPath(); context.arc(px*w,py*h,Math.max(2,w*.06),0,Math.PI*2); context.fill();
+      }
+    } else if (body.shapeType==="mushroom") {
+      context.fillStyle="rgba(255,255,255,.75)";
+      for (const [px,py] of [[-.28,-.38],[.08,-.48],[.32,-.3]]) {
+        context.beginPath(); context.arc(px*w,py*h,Math.max(2,w*.055),0,Math.PI*2); context.fill();
+      }
+    } else if (body.shapeType==="cup") {
+      context.strokeStyle="rgba(255,255,255,.7)";
+      context.beginPath(); context.moveTo(minX+w*.18,minY+h*.18); context.lineTo(maxX-w*.3,minY+h*.18); context.stroke();
+    }
     context.restore();
   }
 
@@ -3703,46 +4601,111 @@
 
   function drawBody(body) {
     const polygons=getWorldDrawPolygons(body);
+    const seamless=body.hideInternalSeams && polygons.length>1;
+    const bodyAlpha=body.explosionDebris ? clamp((body.debrisLife??0)/.32,0,1) : 1;
     ctx.save();
+    ctx.globalAlpha=bodyAlpha;
     ctx.shadowColor="rgba(0,0,0,.26)";
     ctx.shadowBlur=7;
     ctx.shadowOffsetX=3;
     ctx.shadowOffsetY=4;
 
-    for (let polygonIndex=0;polygonIndex<polygons.length;polygonIndex++) {
-      const vertices=polygons[polygonIndex];
-      if (!vertices || vertices.length<3) continue;
+    if (seamless) {
       ctx.beginPath();
-      ctx.moveTo(vertices[0].x,vertices[0].y);
-      for (let i=1;i<vertices.length;i++) ctx.lineTo(vertices[i].x,vertices[i].y);
-      ctx.closePath();
-      ctx.fillStyle=body.partStyles?.[polygonIndex]?.color || body.color;
+      for (const vertices of polygons) {
+        if (!vertices || vertices.length<3) continue;
+        ctx.moveTo(vertices[0].x,vertices[0].y);
+        for (let i=1;i<vertices.length;i++) ctx.lineTo(vertices[i].x,vertices[i].y);
+        ctx.closePath();
+      }
+      ctx.fillStyle=body.color;
       ctx.fill();
       ctx.shadowColor="transparent";
-      ctx.lineWidth=2;
+    } else {
+      for (let polygonIndex=0;polygonIndex<polygons.length;polygonIndex++) {
+        const vertices=polygons[polygonIndex];
+        if (!vertices || vertices.length<3) continue;
+        ctx.beginPath();
+        ctx.moveTo(vertices[0].x,vertices[0].y);
+        for (let i=1;i<vertices.length;i++) ctx.lineTo(vertices[i].x,vertices[i].y);
+        ctx.closePath();
+        ctx.fillStyle=body.partStyles?.[polygonIndex]?.color || body.color;
+        ctx.fill();
+        ctx.shadowColor="transparent";
+        ctx.lineWidth=2;
+        ctx.strokeStyle="#34302c";
+        ctx.stroke();
+      }
+    }
+
+    const visibleSeamlessEdges=[];
+    if (seamless) {
+      const edges=new Map();
+      const pointKey=point=>`${Math.round(point.x*10)},${Math.round(point.y*10)}`;
+      for (const polygon of polygons) {
+        for (let i=0;i<polygon.length;i++) {
+          const a=polygon[i],b=polygon[(i+1)%polygon.length];
+          const aKey=pointKey(a),bKey=pointKey(b);
+          const key=aKey<bKey ? `${aKey}|${bKey}` : `${bKey}|${aKey}`;
+          const entry=edges.get(key);
+          if (entry) entry.count++;
+          else edges.set(key,{a,b,count:1});
+        }
+      }
       ctx.strokeStyle="#34302c";
+      ctx.lineWidth=2;
+      ctx.beginPath();
+      for (const edge of edges.values()) {
+        if (edge.count!==1) continue;
+        const edgeDelta=sub(edge.b,edge.a);
+        const edgeLength=length(edgeDelta);
+        if (edgeLength<.05) continue;
+        const edgeNormal=mul(perpendicular(edgeDelta),1/edgeLength);
+        const midpoint=mul(add(edge.a,edge.b),.5);
+        const probeDistance=clamp(edgeLength*.08,.08,.45);
+        const filledAt=point=>polygons.some(polygon=>pointInPolygon(point,polygon));
+        // Repeated clipping can create one long internal edge opposite several
+        // shorter edges. Material on both sides identifies it as an internal
+        // physics partition even when endpoint-based cancellation cannot.
+        if (filledAt(add(midpoint,mul(edgeNormal,probeDistance))) &&
+            filledAt(sub(midpoint,mul(edgeNormal,probeDistance)))) continue;
+        visibleSeamlessEdges.push(edge);
+        ctx.moveTo(edge.a.x,edge.a.y);
+        ctx.lineTo(edge.b.x,edge.b.y);
+      }
       ctx.stroke();
     }
 
-    ctx.globalAlpha=.18;
+    ctx.globalAlpha=.18*bodyAlpha;
     ctx.strokeStyle="white";
     ctx.lineWidth=3;
-    for (const vertices of polygons) {
-      ctx.beginPath();
-      ctx.moveTo(vertices[0].x,vertices[0].y);
-      for (let i=1;i<Math.min(3,vertices.length);i++) ctx.lineTo(vertices[i].x,vertices[i].y);
-      ctx.stroke();
+    if (!seamless) {
+      for (const vertices of polygons) {
+        ctx.beginPath();
+        ctx.moveTo(vertices[0].x,vertices[0].y);
+        for (let i=1;i<Math.min(3,vertices.length);i++) ctx.lineTo(vertices[i].x,vertices[i].y);
+        ctx.stroke();
+      }
     }
 
-    if (weldSelection.has(body)) {
-      ctx.globalAlpha=1;
+    if (weldSelection.has(body) || selectedBodies.has(body)) {
+      ctx.globalAlpha=bodyAlpha;
       ctx.setLineDash([6,4]);
-      ctx.strokeStyle="#000";
+      ctx.strokeStyle=selectedBodies.has(body) ? "#3270b8" : "#000";
       ctx.lineWidth=4;
-      for (const vertices of polygons) {
-        ctx.beginPath(); ctx.moveTo(vertices[0].x,vertices[0].y);
-        for (let i=1;i<vertices.length;i++) ctx.lineTo(vertices[i].x,vertices[i].y);
-        ctx.closePath(); ctx.stroke();
+      if (seamless) {
+        ctx.beginPath();
+        for (const edge of visibleSeamlessEdges) {
+          ctx.moveTo(edge.a.x,edge.a.y);
+          ctx.lineTo(edge.b.x,edge.b.y);
+        }
+        ctx.stroke();
+      } else {
+        for (const vertices of polygons) {
+          ctx.beginPath(); ctx.moveTo(vertices[0].x,vertices[0].y);
+          for (let i=1;i<vertices.length;i++) ctx.lineTo(vertices[i].x,vertices[i].y);
+          ctx.closePath(); ctx.stroke();
+        }
       }
     }
     ctx.restore();
@@ -3760,7 +4723,9 @@
       drawExplosiveDetails(ctx,body);
       drawSawDetails(ctx,body);
       drawWeaponDetails(ctx,body);
+      drawConveyorDetails(ctx,body);
       drawRagdollDetails(ctx,body);
+      drawFoodDetails(ctx,body);
     }
     drawBodyEffects(ctx,body);
   }
@@ -3778,6 +4743,40 @@
     ctx.moveTo(sliceStart.x,sliceStart.y);
     ctx.lineTo(pointer.x,pointer.y);
     ctx.stroke();
+    ctx.restore();
+  }
+
+  function drawScissorCuts() {
+    ctx.save();
+    ctx.lineCap="round";
+    ctx.lineJoin="round";
+    for (const body of bodies) {
+      if (!body.scissorCuts?.length) continue;
+      ctx.strokeStyle="rgba(35,24,22,.92)";
+      ctx.lineWidth=3;
+      for (const cut of body.scissorCuts) {
+        const a=add(body.pos,rotate(cut.a,body.angle));
+        const b=add(body.pos,rotate(cut.b,body.angle));
+        ctx.beginPath(); ctx.moveTo(a.x,a.y); ctx.lineTo(b.x,b.y); ctx.stroke();
+      }
+      ctx.strokeStyle="rgba(255,255,255,.42)";
+      ctx.lineWidth=.8;
+      for (const cut of body.scissorCuts) {
+        const a=add(body.pos,rotate(cut.a,body.angle));
+        const b=add(body.pos,rotate(cut.b,body.angle));
+        ctx.beginPath(); ctx.moveTo(a.x,a.y); ctx.lineTo(b.x,b.y); ctx.stroke();
+      }
+    }
+    ctx.restore();
+  }
+
+  function drawScissorLine() {
+    if (!scissorStart || !pointer.down || mode!=="scissors") return;
+    ctx.save();
+    ctx.setLineDash([5,4]);
+    ctx.strokeStyle="#8d2925";
+    ctx.lineWidth=2.5;
+    ctx.beginPath(); ctx.moveTo(scissorStart.x,scissorStart.y); ctx.lineTo(pointer.x,pointer.y); ctx.stroke();
     ctx.restore();
   }
 
@@ -3876,6 +4875,22 @@
     ctx.strokeStyle="#292725";
     ctx.fillStyle="#fff";
     ctx.lineWidth=2;
+    for (const body of bodies) {
+      if (!body.unbreakable) continue;
+      const marker={x:body.pos.x,y:body.pos.y-body.radius-9};
+      ctx.fillStyle="#f2c94c";
+      ctx.strokeStyle="#292725";
+      ctx.beginPath();
+      ctx.arc(marker.x,marker.y,8,0,Math.PI*2);
+      ctx.fill();
+      ctx.stroke();
+      ctx.fillStyle="#292725";
+      ctx.font="bold 12px system-ui, sans-serif";
+      ctx.textAlign="center";
+      ctx.textBaseline="middle";
+      ctx.fillText("∞",marker.x,marker.y-.5);
+    }
+    ctx.fillStyle="#fff";
     for (const constraint of constraints) {
       const loadRatio=constraint.strength===Infinity
         ? 0
@@ -3910,7 +4925,12 @@
         ctx.beginPath(); ctx.moveTo(a.x,a.y); ctx.lineTo(b.x,b.y); ctx.stroke();
         ctx.setLineDash([]);
       }
-      if (constraint.kind==="hinge" || constraint.kind==="motor") {
+      if (constraint.kind==="sticky") {
+        const bond=mul(add(a,b),.5);
+        ctx.fillStyle="#b26cc7";
+        ctx.beginPath(); ctx.arc(bond.x,bond.y,5,0,Math.PI*2); ctx.fill(); ctx.stroke();
+        ctx.fillStyle="#fff";
+      } else if (constraint.kind==="hinge" || constraint.kind==="motor") {
         const pin=mul(add(a,b),.5);
         ctx.beginPath(); ctx.arc(pin.x,pin.y,6,0,Math.PI*2); ctx.fill(); ctx.stroke();
         ctx.beginPath(); ctx.arc(pin.x,pin.y,2,0,Math.PI*2); ctx.fillStyle="#222"; ctx.fill(); ctx.fillStyle="#fff";
@@ -3940,18 +4960,37 @@
     ctx.restore();
   }
 
+  function drawSelectionOverlay() {
+    if (mode!=="select" || !selectionStart || !selectionCurrent) return;
+    const left=Math.min(selectionStart.x,selectionCurrent.x);
+    const top=Math.min(selectionStart.y,selectionCurrent.y);
+    const width=Math.abs(selectionCurrent.x-selectionStart.x);
+    const height=Math.abs(selectionCurrent.y-selectionStart.y);
+    ctx.save();
+    ctx.fillStyle="rgba(50,112,184,.10)";
+    ctx.strokeStyle="#3270b8";
+    ctx.lineWidth=1.5;
+    ctx.setLineDash([6,4]);
+    ctx.fillRect(left,top,width,height);
+    ctx.strokeRect(left,top,width,height);
+    ctx.restore();
+  }
+
   function draw() {
     updateGunControlVisibility();
     drawBackground();
     drawExplosions();
     drawLaserBeams();
     for (const body of bodies) drawBody(body);
+    drawScissorCuts();
     drawConstraints();
     drawGrabJoint();
     drawWeldDraft();
     drawBuildDraft();
     drawSliceLine();
+    drawScissorLine();
     drawSpawnDraft();
+    drawSelectionOverlay();
 
     if (flash>0) {
       ctx.fillStyle = `rgba(255,245,225,${flash})`;
@@ -4034,6 +5073,7 @@
     {id:"materialrubber",name:"draw rubber rectangle",tag:"material"},
     {id:"materialice",name:"draw ice rectangle",tag:"material"},
     {id:"materialfoam",name:"draw foam rectangle",tag:"material"},
+    {id:"materialsticky",name:"draw sticky rectangle",tag:"material"},
     {id:"deformableline",name:"draw deformable line",tag:"deformable"},
     {id:"deformablerectangle",name:"draw deformable rectangle",tag:"deformable"},
     {id:"triangle",name:"triangle",tag:"basic"},
@@ -4074,6 +5114,7 @@
     {id:"laser",name:"interactive continuous laser",tag:"special"},
     {id:"gun",name:"interactive splitting gun",tag:"special"},
     {id:"explosive",name:"interactive impact explosive",tag:"special"},
+    {id:"conveyor",name:"interactive conveyor belt",tag:"special"},
     {id:"shield",name:"shield",tag:"weapon"},
     {id:"tank",name:"tank",tag:"vehicle"},
     {id:"rocket",name:"rocket",tag:"vehicle"},
@@ -4097,6 +5138,12 @@
     {id:"mushroom",name:"mushroom",tag:"food"},
     {id:"donut",name:"donut",tag:"food"},
     {id:"cup",name:"cup",tag:"food"},
+    {id:"banana",name:"banana",tag:"food"},
+    {id:"apple",name:"apple",tag:"food"},
+    {id:"burger",name:"burger",tag:"food"},
+    {id:"cake",name:"cake slice",tag:"food"},
+    {id:"cookie",name:"cookie",tag:"food"},
+    {id:"fries",name:"fries",tag:"food"},
     {id:"duck",name:"duck",tag:"animal"},
     {id:"fish",name:"fish",tag:"animal"},
     {id:"cat",name:"cat head",tag:"animal"},
@@ -4109,7 +5156,6 @@
     {id:"tralalero",name:"tralalero tralala",tag:"meme"},
     {id:"bombardino",name:"bombardino crocodilo",tag:"meme"},
     {id:"capybara",name:"capybara",tag:"meme"},
-    {id:"banana",name:"banana",tag:"meme"},
     {id:"doge",name:"doge",tag:"meme"},
     {id:"cheems",name:"cheems",tag:"meme"},
     {id:"shrekhead",name:"shrek head",tag:"meme"},
@@ -4193,7 +5239,7 @@
     }
 
     preview.closePath();
-    preview.fillStyle = MATERIAL_SAMPLE_COLORS[type] ||
+    preview.fillStyle = MATERIAL_SAMPLE_COLORS[type] || FOOD_COLORS[type] ||
       (type==="deformableline" ? "#738390" : type==="deformablerectangle" ? "#87949d" : type==="random" ? "#8a8a8a" : "#d7bd53");
     preview.fill();
     preview.lineWidth=1.5;
@@ -4212,6 +5258,18 @@
         angle:0
       });
     }
+    if (FOOD_TYPES.has(type)) {
+      const localVerts=points.map(point=>({
+        x:(point.x*scale+offsetX)-cssWidth*.5,
+        y:(point.y*scale+offsetY)-cssHeight*.5
+      }));
+      drawFoodDetails(preview,{
+        shapeType:type,
+        verts:localVerts,
+        pos:{x:cssWidth*.5,y:cssHeight*.5},
+        angle:0
+      });
+    }
     if (MATERIAL_SAMPLE_TYPES.has(type)) {
       const localVerts=points.map(point=>({
         x:(point.x*scale+offsetX)-cssWidth*.5,
@@ -4224,7 +5282,7 @@
         angle:0
       });
     }
-    if (["explosive","saw","laser","gun","bullet"].includes(type)) {
+    if (["explosive","saw","laser","gun","bullet","conveyor"].includes(type)) {
       const localVerts=points.map(point=>({
         x:(point.x*scale+offsetX)-cssWidth*.5,
         y:(point.y*scale+offsetY)-cssHeight*.5
@@ -4238,13 +5296,18 @@
       };
       if (type==="explosive") drawExplosiveDetails(preview,previewBody);
       else if (type==="saw") drawSawDetails(preview,previewBody);
+      else if (type==="conveyor") drawConveyorDetails(preview,previewBody);
       else drawWeaponDetails(preview,previewBody);
     }
   }
 
   function renderCategoryFilters() {
     const currentScroll = ui.categoryFilters.scrollLeft;
-    const categories = ["all", ...new Set(spawnables.map(item => item.tag))];
+    const available=[...new Set(spawnables.map(item=>item.tag))];
+    const preferred=["all","basic","draw","material","deformable","food","special"];
+    const categories=[...preferred.filter(category=>category==="all" || available.includes(category)),
+      ...available.filter(category=>!preferred.includes(category))];
+    ui.spawnSearch.placeholder="search all categories...";
 
     ui.categoryFilters.innerHTML = "";
 
@@ -4269,18 +5332,14 @@
     const oldScrollTop = preserveScroll ? ui.spawnOptions.scrollTop : 0;
     const cleaned = query.trim().toLowerCase();
 
-    const matches = spawnables.filter(item => {
-      const matchesSearch =
-        item.name.includes(cleaned) ||
-        item.tag.includes(cleaned) ||
-        item.id.includes(cleaned);
-
-      const matchesCategory =
-        selectedSpawnCategory==="all" ||
-        item.tag===selectedSpawnCategory;
-
-      return matchesSearch && matchesCategory;
-    });
+    // An active text query intentionally searches every category. Category
+    // filtering resumes as soon as the search box is cleared.
+    const categorySpawnables=!cleaned && selectedSpawnCategory!=="all"
+      ? spawnables.filter(item=>item.tag===selectedSpawnCategory)
+      : spawnables;
+    const matches=categorySpawnables.filter(item=>
+      !cleaned || item.name.includes(cleaned) || item.tag.includes(cleaned) || item.id.includes(cleaned)
+    );
 
     ui.spawnOptions.innerHTML = "";
 
@@ -4363,7 +5422,33 @@ if ("ResizeObserver" in window) {
     ui.spawnPanel.style.right = "auto";
   }
 
+  function clampToolbarToViewport() {
+    const rect=ui.toolbar.getBoundingClientRect();
+    const left=clamp(rect.left,0,Math.max(0,innerWidth-Math.min(rect.width,innerWidth)));
+    const top=clamp(rect.top,0,Math.max(0,innerHeight-Math.min(rect.height,innerHeight)));
+    ui.toolbar.style.left=left+"px";
+    ui.toolbar.style.top=top+"px";
+  }
+
   window.addEventListener("resize", clampSpawnPanelToViewport);
+  window.addEventListener("resize", clampToolbarToViewport);
+
+  let toolbarDrag=null;
+  ui.toolbarHeader.addEventListener("pointerdown",event=>{
+    if (event.button!==0) return;
+    const rect=ui.toolbar.getBoundingClientRect();
+    toolbarDrag={offsetX:event.clientX-rect.left,offsetY:event.clientY-rect.top};
+    ui.toolbarHeader.setPointerCapture(event.pointerId);
+  });
+  ui.toolbarHeader.addEventListener("pointermove",event=>{
+    if (!toolbarDrag) return;
+    const rect=ui.toolbar.getBoundingClientRect();
+    ui.toolbar.style.left=clamp(event.clientX-toolbarDrag.offsetX,0,Math.max(0,innerWidth-rect.width))+"px";
+    ui.toolbar.style.top=clamp(event.clientY-toolbarDrag.offsetY,0,Math.max(0,innerHeight-rect.height))+"px";
+  });
+  const stopToolbarDrag=()=>{ toolbarDrag=null; };
+  ui.toolbarHeader.addEventListener("pointerup",stopToolbarDrag);
+  ui.toolbarHeader.addEventListener("pointercancel",stopToolbarDrag);
 
   let spawnPanelDrag = null;
 
@@ -4464,6 +5549,194 @@ if ("ResizeObserver" in window) {
     }));
   }
 
+  function updateSelectionStatus() {
+    for (const body of [...selectedBodies]) if (!bodies.includes(body)) selectedBodies.delete(body);
+    const count=selectedBodies.size;
+    ui.selectionStatus.textContent=count
+      ? `${count} selected · drag one to move${count>1 && !paused ? " · pause to weld" : ""}`
+      : "Drag a box around objects.";
+    ui.cloneSelection.disabled=count===0;
+    ui.deleteSelection.disabled=count===0;
+    ui.weldSelectionButton.disabled=count<2 || !paused;
+    syncObjectInspector();
+  }
+
+  function colorToHex(color) {
+    if (/^#[0-9a-f]{6}$/i.test(color||"")) return color;
+    if (/^#[0-9a-f]{3}$/i.test(color||"")) return "#"+[...color.slice(1)].map(char=>char+char).join("");
+    const match=String(color||"").match(/[\d.]+/g);
+    if (!match || match.length<3) return "#808080";
+    return "#"+match.slice(0,3).map(value=>clamp(Math.round(Number(value)),0,255).toString(16).padStart(2,"0")).join("");
+  }
+
+  function syncObjectInspector() {
+    const body=selectedBodies.size===1 ? [...selectedBodies][0] : null;
+    const visible=body && bodies.includes(body);
+    ui.objectInspector.classList.toggle("visible",Boolean(visible));
+    if (!visible) return;
+    const setRange=(input,label,value,digits=2)=>{
+      const numeric=Number(value)||0;
+      input.value=String(clamp(numeric,Number(input.min),Number(input.max)));
+      label.textContent=digits===0 ? String(Math.round(numeric)) : String(Number(numeric.toFixed(digits)));
+    };
+    const samplePreset=body.shapeType?.startsWith("material") ? body.shapeType.slice("material".length) : null;
+    ui.inspectMaterial.value=body.inspectorMaterial||
+      (["wood","metal","glass","rubber","stone","ceramic","sticky"].includes(samplePreset) ? samplePreset : "custom");
+    setRange(ui.inspectMass,ui.inspectMassValue,body.mass,2);
+    setRange(ui.inspectGravity,ui.inspectGravityValue,body.material.gravityScale??1,2);
+    setRange(ui.inspectFriction,ui.inspectFrictionValue,body.material.dynamicFriction??.5,2);
+    setRange(ui.inspectBounce,ui.inspectBounceValue,body.material.restitution??.2,2);
+    setRange(ui.inspectDurability,ui.inspectDurabilityValue,body.material.impactStrength??1000,0);
+    ui.inspectColor.value=colorToHex(body.color);
+    const conveyor=body.shapeType==="conveyor";
+    ui.conveyorInspector.classList.toggle("visible",conveyor);
+    if (conveyor) setRange(ui.inspectConveyor,ui.inspectConveyorValue,body.conveyorSpeed??180,0);
+    const explosive=body.shapeType==="explosive";
+    ui.explosiveInspector.classList.toggle("visible",explosive);
+    if (explosive) {
+      setRange(ui.inspectBlastRadius,ui.inspectBlastRadiusValue,body.blastRadius??200,0);
+      setRange(ui.inspectBlastForce,ui.inspectBlastForceValue,body.blastForce??760,0);
+      setRange(ui.inspectFuse,ui.inspectFuseValue,body.fuseDelay??.08,2);
+      ui.inspectFuseValue.textContent=Number(ui.inspectFuse.value).toFixed(2)+"s";
+    }
+  }
+
+  function setInspectedMass(body,nextMass) {
+    nextMass=Math.max(.025,nextMass);
+    const ratio=nextMass/Math.max(body.mass,.025);
+    body.mass=nextMass;
+    body.inertia=Math.max(.05,body.inertia*ratio);
+    body.invMass=body.isStatic ? 0 : 1/body.mass;
+    body.invInertia=body.isStatic ? 0 : 1/body.inertia;
+  }
+
+  function inspectedBody() {
+    if (selectedBodies.size!==1) return null;
+    const body=[...selectedBodies][0];
+    return bodies.includes(body) ? body : null;
+  }
+
+  function applyInspectorControl(event) {
+    const body=inspectedBody();
+    if (!body) return;
+    if (!inspectorHistoryRecorded) { recordHistory(); inspectorHistoryRecorded=true; }
+    const target=event.currentTarget;
+    if (target===ui.inspectMaterial) {
+      if (target.value!=="custom") {
+        const preset=target.value==="sticky" ? MATERIAL_BY_TYPE.materialsticky : MATERIAL_PRESETS[target.value];
+        if (preset) {
+          const densityRatio=(preset.density||1)/Math.max(body.material.density||1,.01);
+          body.material={...preset};
+          body.inspectorMaterial=target.value;
+          setInspectedMass(body,body.mass*densityRatio);
+        }
+      }
+    } else if (target===ui.inspectMass) setInspectedMass(body,Number(target.value));
+    else if (target===ui.inspectGravity) body.material.gravityScale=Number(target.value);
+    else if (target===ui.inspectFriction) {
+      body.material.dynamicFriction=Number(target.value);
+      body.material.staticFriction=Math.max(body.material.dynamicFriction,body.material.dynamicFriction*1.24);
+    } else if (target===ui.inspectBounce) body.material.restitution=Number(target.value);
+    else if (target===ui.inspectDurability) body.material.impactStrength=Number(target.value);
+    else if (target===ui.inspectColor) body.color=target.value;
+    else if (target===ui.inspectConveyor) body.conveyorSpeed=Number(target.value);
+    else if (target===ui.inspectBlastRadius) body.blastRadius=Number(target.value);
+    else if (target===ui.inspectBlastForce) body.blastForce=Number(target.value);
+    else if (target===ui.inspectFuse) body.fuseDelay=Number(target.value);
+    body.sleeping=false;
+    body.sleepTimer=0;
+    syncObjectInspector();
+  }
+
+  function bodyOverlapsSelection(body,left,top,right,bottom) {
+    const vertices=getWorldVertices(body);
+    const minX=Math.min(...vertices.map(point=>point.x));
+    const maxX=Math.max(...vertices.map(point=>point.x));
+    const minY=Math.min(...vertices.map(point=>point.y));
+    const maxY=Math.max(...vertices.map(point=>point.y));
+    return maxX>=left && minX<=right && maxY>=top && minY<=bottom;
+  }
+
+  function finishSelectionBox(end) {
+    if (!selectionStart) return;
+    const distance=length(sub(end,selectionStart));
+    if (!selectionAdditive) selectedBodies.clear();
+    if (distance<5) {
+      const body=getBodyAt(end);
+      if (body) {
+        if (selectionAdditive && selectedBodies.has(body)) selectedBodies.delete(body);
+        else selectedBodies.add(body);
+      }
+    } else {
+      const left=Math.min(selectionStart.x,end.x), right=Math.max(selectionStart.x,end.x);
+      const top=Math.min(selectionStart.y,end.y), bottom=Math.max(selectionStart.y,end.y);
+      for (const body of bodies) if (bodyOverlapsSelection(body,left,top,right,bottom)) selectedBodies.add(body);
+    }
+    selectionStart=null;
+    selectionCurrent=null;
+    updateSelectionStatus();
+  }
+
+  function deleteSelectedBodies() {
+    const selected=[...selectedBodies].filter(body=>bodies.includes(body));
+    if (!selected.length) return;
+    recordHistory();
+    const selectedSet=new Set(selected);
+    constraints=constraints.filter(constraint=>!selectedSet.has(constraint.a) && !selectedSet.has(constraint.b));
+    bodies=bodies.filter(body=>!selectedSet.has(body));
+    selectedBodies.clear();
+    updateSelectionStatus();
+  }
+
+  function cloneSelectedBodies() {
+    const originals=[...selectedBodies].filter(body=>bodies.includes(body));
+    if (!originals.length || bodies.length+originals.length>MAX_DYNAMIC_BODIES) return;
+    recordHistory();
+    const clones=structuredClone(originals);
+    const bodyMap=new Map();
+    const groupMap=new Map();
+    originals.forEach((body,index)=>{
+      const clone=clones[index];
+      clone.id=idCounter++;
+      clone.pos=add(clone.pos,{x:24,y:24});
+      clone.sleeping=false;
+      clone.sleepTimer=0;
+      clone.releaseGrace=.15;
+      if (clone.ragdollGroup) {
+        if (!groupMap.has(clone.ragdollGroup)) groupMap.set(clone.ragdollGroup,idCounter++);
+        clone.ragdollGroup=groupMap.get(clone.ragdollGroup);
+      }
+      bodyMap.set(body,clone);
+    });
+    const clonedConstraints=[];
+    for (const constraint of constraints) {
+      if (!bodyMap.has(constraint.a)) continue;
+      if (constraint.b && !bodyMap.has(constraint.b)) continue;
+      const copy=structuredClone({...constraint,a:null,b:null});
+      copy.id=idCounter++;
+      copy.a=bodyMap.get(constraint.a);
+      copy.b=constraint.b ? bodyMap.get(constraint.b) : null;
+      if (!copy.b && copy.worldB) copy.worldB=add(copy.worldB,{x:24,y:24});
+      copy.load=0;
+      copy.age=0;
+      copy.invalid=false;
+      clonedConstraints.push(copy);
+    }
+    bodies.push(...clones);
+    constraints.push(...clonedConstraints);
+    selectedBodies=new Set(clones);
+    updateSelectionStatus();
+  }
+
+  function weldCurrentSelection() {
+    if (!paused || selectedBodies.size<2) return;
+    weldSelection.clear();
+    for (const body of selectedBodies) weldSelection.add(body);
+    weldSelectedBodies();
+    selectedBodies.clear();
+    updateSelectionStatus();
+  }
+
   function updateBuildStatus(message) {
     if (message) {
       ui.buildStatus.textContent=message;
@@ -4472,22 +5745,34 @@ if ("ResizeObserver" in window) {
     if (!paused) ui.buildStatus.textContent="Pause to use constraint tools.";
     else if (ui.buildTool.value==="weld") ui.buildStatus.textContent=`${weldSelection.size} selected · click bodies, then Weld selected`;
     else if (ui.buildTool.value==="anchor") ui.buildStatus.textContent="Click an object to anchor or release it.";
+    else if (ui.buildTool.value==="unbreakable") ui.buildStatus.textContent="Click an object to toggle unbreakable protection.";
     else ui.buildStatus.textContent=`Drag from an object to another object or the world (${ui.buildTool.value}).`;
   }
 
+  const MIN_CONSTRAINT_STRENGTH=150;
+  const MAX_FINITE_CONSTRAINT_STRENGTH=250000;
+
   function selectedConstraintStrength() {
-    const value=Number(ui.constraintStrength.value);
-    return value>=Number(ui.constraintStrength.max) ? Infinity : value;
+    const position=Number(ui.constraintStrength.value);
+    if (position>=Number(ui.constraintStrength.max)) return Infinity;
+    // A logarithmic scale keeps delicate settings controllable while giving
+    // reinforced constraints a genuinely strong finite range.
+    const finitePosition=clamp(position/99,0,1);
+    const strength=MIN_CONSTRAINT_STRENGTH*
+      Math.pow(MAX_FINITE_CONSTRAINT_STRENGTH/MIN_CONSTRAINT_STRENGTH,finitePosition);
+    return Math.max(MIN_CONSTRAINT_STRENGTH,Math.round(strength/25)*25);
   }
 
   function updateConstraintStrengthLabel() {
-    ui.constraintStrengthValue.textContent=selectedConstraintStrength()===Infinity
+    const strength=selectedConstraintStrength();
+    ui.constraintStrengthValue.textContent=strength===Infinity
       ? "Infinite"
-      : ui.constraintStrength.value;
+      : strength.toLocaleString();
   }
 
   function createBuildConstraint(kind,start,end,bodyA,bodyB) {
     if (!bodyA || bodyA===bodyB) bodyB=null;
+    recordHistory();
     let anchorA={...start};
     let anchorB={...end};
     if (kind==="hinge" || kind==="motor") {
@@ -4519,6 +5804,7 @@ if ("ResizeObserver" in window) {
     const selected=[...weldSelection].filter(body=>bodies.includes(body));
     if (!paused) { updateBuildStatus("Pause before welding objects."); return; }
     if (selected.length<2) { updateBuildStatus("Select at least two touching or nearby objects."); return; }
+    recordHistory();
 
     const entries=selected.flatMap(bodyPartEntries);
     const totalMass=selected.reduce((sum,body)=>sum+body.mass,0);
@@ -4531,7 +5817,8 @@ if ("ResizeObserver" in window) {
         partStyles:entries.map(entry=>entry.style),
         vel:mul(velocity,1/Math.max(totalMass,.001)),
         angVel:angularVelocity,
-        color:selected[0].color
+        color:selected[0].color,
+        unbreakable:selected.some(body=>body.unbreakable)
       }
     );
     if (!welded) { updateBuildStatus("Those objects could not be welded."); return; }
@@ -4544,6 +5831,32 @@ if ("ResizeObserver" in window) {
   }
 
   ui.finishWeld.onclick=weldSelectedBodies;
+  ui.cloneSelection.onclick=cloneSelectedBodies;
+  ui.deleteSelection.onclick=deleteSelectedBodies;
+  ui.weldSelectionButton.onclick=weldCurrentSelection;
+  ui.clearSelection.onclick=()=>{ selectedBodies.clear(); updateSelectionStatus(); };
+  ui.undo.onclick=undoScene;
+  ui.redo.onclick=redoScene;
+  const inspectorControls=[
+    ui.inspectMaterial,ui.inspectMass,ui.inspectGravity,ui.inspectFriction,
+    ui.inspectBounce,ui.inspectDurability,ui.inspectColor,ui.inspectConveyor,
+    ui.inspectBlastRadius,ui.inspectBlastForce,ui.inspectFuse
+  ];
+  for (const control of inspectorControls) {
+    control.addEventListener("pointerdown",()=>{ inspectorHistoryRecorded=false; });
+    control.addEventListener("focus",()=>{ inspectorHistoryRecorded=false; });
+    control.addEventListener("input",applyInspectorControl);
+  }
+  ui.detonateSelected.onclick=()=>{
+    const body=inspectedBody();
+    if (!body || body.shapeType!=="explosive") return;
+    recordHistory();
+    detonateExplosive(body);
+    selectedBodies.delete(body);
+    updateSelectionStatus();
+  };
+  updateSelectionStatus();
+  updateHistoryButtons();
   ui.toggleConstraints.onclick=()=>{
     constraintsVisible=!constraintsVisible;
     ui.toggleConstraints.textContent=constraintsVisible ? "Hide constraint labels" : "Show constraint labels";
@@ -4556,7 +5869,7 @@ if ("ResizeObserver" in window) {
     const motorVisible=ui.buildTool.value==="motor";
     ui.motorSpeed.style.display=motorVisible ? "block" : "none";
     ui.motorSpeedLabel.style.display=motorVisible ? "flex" : "none";
-    const strengthVisible=!['weld','anchor'].includes(ui.buildTool.value);
+    const strengthVisible=!['weld','anchor','unbreakable'].includes(ui.buildTool.value);
     ui.constraintStrength.style.display=strengthVisible ? "block" : "none";
     ui.constraintStrengthLabel.style.display=strengthVisible ? "flex" : "none";
     updateBuildStatus();
@@ -4614,15 +5927,18 @@ function setMode(nextMode) {
     });
 
     canvas.style.cursor = (!paused && ((mode==="spawn" && selectedSpawnType==="compound") || mode==="build")) ||
-      (paused && !["slice","spawn","delete","build","drag"].includes(mode)) ? "not-allowed" :
+      (paused && !["slice","scissors","spawn","delete","build","drag","select"].includes(mode)) ? "not-allowed" :
       mode === "drag" ? "grab" :
+      mode === "select" ? "default" :
       mode === "spawn" ? "copy" :
       mode === "delete" ? "not-allowed" :
       "crosshair";
 
     ui.spawnPanel.classList.toggle("visible", mode === "spawn");
     ui.buildControls.classList.toggle("visible",mode==="build");
+    ui.selectionControls.classList.toggle("visible",mode==="select");
     if (mode==="build") updateBuildStatus();
+    if (mode==="select") updateSelectionStatus();
 
     if (mode === "spawn" && !ui.spawnPanel.dataset.positioned) {
       const rect = ui.spawnPanel.getBoundingClientRect();
@@ -4641,23 +5957,36 @@ function setMode(nextMode) {
     const p = pointerPosition(event);
     pointer.x = p.x;
     pointer.y = p.y;
-    const pausedEditMode = mode==="slice" || mode==="spawn" || mode==="delete" || mode==="build" || mode==="drag";
+    const pausedEditMode = mode==="slice" || mode==="scissors" || mode==="spawn" || mode==="delete" || mode==="build" || mode==="drag" || mode==="select";
     if (paused && !pausedEditMode) return;
+    historyGestureRecorded=false;
     pointer.down = true;
     canvas.setPointerCapture(event.pointerId);
 
     if (mode==="slice") {
       sliceStart = p;
+    } else if (mode==="scissors") {
+      scissorStart={...p};
     } else if (mode==="spawn") {
       if (selectedSpawnType==="compound" && !paused) return;
       if (isDraggedSpawnType(selectedSpawnType)) {
         drawSpawnStart={...p};
       } else {
+        recordHistory();
         spawn(p.x,p.y);
       }
     } else if (mode==="delete") {
       deleteTrailPoint={...p};
       deleteAtPoint(p);
+    } else if (mode==="select") {
+      const body=getBodyAt(p);
+      if (body && selectedBodies.has(body)) {
+        selectionMoveLast={...p};
+      } else {
+        selectionStart={...p};
+        selectionCurrent={...p};
+        selectionAdditive=event.shiftKey;
+      }
     } else if (mode==="build") {
       if (!paused) return;
       const body=getBodyAt(p);
@@ -4669,8 +5998,23 @@ function setMode(nextMode) {
         }
       } else if (ui.buildTool.value==="anchor") {
         if (body) {
+          recordHistory();
           setBodyStatic(body,!body.isStatic);
           updateBuildStatus(body.isStatic ? "Object anchored to the world." : "Object released.");
+        }
+      } else if (ui.buildTool.value==="unbreakable") {
+        if (body) {
+          recordHistory();
+          body.unbreakable=!body.unbreakable;
+          impactBreakQueue.delete(body.id);
+          sawCutQueue.delete(body.id);
+          deformationQueue.delete(body.id);
+          for (const [key,hit] of bulletCutQueue) {
+            if (hit.target===body) bulletCutQueue.delete(key);
+          }
+          updateBuildStatus(body.unbreakable
+            ? "Object is now unbreakable."
+            : "Unbreakable protection removed.");
         }
       } else if (body) {
         buildStart={point:{...p},body};
@@ -4700,7 +6044,23 @@ function setMode(nextMode) {
     pointer.x = p.x;
     pointer.y = p.y;
 
-    if (pointer.down && mode==="delete" && deleteTrailPoint) {
+    if (pointer.down && mode==="select" && selectionMoveLast) {
+      const delta=sub(p,selectionMoveLast);
+      if (length(delta)>.01) {
+        if (!historyGestureRecorded) recordHistory();
+        for (const body of selectedBodies) {
+          if (!bodies.includes(body)) continue;
+          body.pos=add(body.pos,delta);
+          body.vel={x:0,y:0};
+          body.angVel=0;
+          body.sleeping=body.isStatic;
+          body.sleepTimer=0;
+        }
+        selectionMoveLast={...p};
+      }
+    } else if (pointer.down && mode==="select" && selectionStart) {
+      selectionCurrent={...p};
+    } else if (pointer.down && mode==="delete" && deleteTrailPoint) {
       eraseAlongPath(deleteTrailPoint,p);
       deleteTrailPoint={...p};
     } else if (paused && heldBody) {
@@ -4720,22 +6080,32 @@ function setMode(nextMode) {
     pointer.y = p.y;
     pointer.down = false;
     deleteTrailPoint=null;
-    const pausedEditMode = mode==="slice" || mode==="spawn" || mode==="delete" || mode==="build" || mode==="drag";
+    const pausedEditMode = mode==="slice" || mode==="scissors" || mode==="spawn" || mode==="delete" || mode==="build" || mode==="drag" || mode==="select";
     if (paused && !pausedEditMode) return;
 
     if (mode==="slice" && sliceStart && length(sub(p,sliceStart))>10) {
+      recordHistory();
       performSlice(sliceStart,p);
     }
+    if (mode==="scissors" && scissorStart && length(sub(p,scissorStart))>5) {
+      performScissorSwipe(scissorStart,p);
+    }
     if (mode==="spawn" && drawSpawnStart) {
+      recordHistory();
       createDraggedShape(selectedSpawnType,drawSpawnStart,p);
       drawSpawnStart=null;
     }
-    if (mode==="build" && buildStart && !["weld","anchor"].includes(ui.buildTool.value)) {
+    if (mode==="build" && buildStart && !["weld","anchor","unbreakable"].includes(ui.buildTool.value)) {
       createBuildConstraint(ui.buildTool.value,buildStart.point,p,buildStart.body,getBodyAt(p));
       buildStart=null;
     }
+    if (mode==="select") {
+      if (selectionStart) finishSelectionBox(p);
+      selectionMoveLast=null;
+    }
 
     sliceStart = null;
+    scissorStart = null;
 
     if (heldBody) {
       if (paused) {
@@ -4774,12 +6144,16 @@ function setMode(nextMode) {
   function cancelActiveInteraction() {
     drawSpawnStart=null;
     deleteTrailPoint=null;
+    selectionStart=null;
+    selectionCurrent=null;
+    selectionMoveLast=null;
     buildStart=null;
     heldBody=null;
     heldLocalPoint=null;
     pausedRotationOffset=0;
     mouseTrail=[];
     sliceStart=null;
+    scissorStart=null;
     pointer.down=false;
     setMode(mode);
   }
@@ -4789,6 +6163,7 @@ function setMode(nextMode) {
   canvas.addEventListener("contextmenu",event=>{
     event.preventDefault();
     const p = pointerPosition(event);
+    recordHistory();
     spawn(p.x,p.y);
   });
 
@@ -4799,12 +6174,14 @@ function setMode(nextMode) {
   });
 
   document.getElementById("spawnTen").onclick = ()=>{
+    recordHistory();
     for (let i=0;i<10;i++) {
       spawn(width*.32+Math.random()*width*.62,20+Math.random()*100);
     }
   };
 
   function resetWorld() {
+    if (bodies.length || constraints.length) recordHistory();
     bodies = [];
     cuts = 0;
     cancelActiveInteraction();
@@ -4818,6 +6195,9 @@ function setMode(nextMode) {
     sawCutQueue.clear();
     bulletCutQueue.clear();
     deformationQueue.clear();
+    stickyPairLastAttach.clear();
+    selectedBodies.clear();
+    updateSelectionStatus();
   }
 
   document.getElementById("reset").onclick = resetWorld;
@@ -4839,6 +6219,7 @@ function setMode(nextMode) {
     ui.pause.classList.toggle("active",paused);
     setMode(mode);
     updateBuildStatus();
+    updateSelectionStatus();
   }
 
   ui.pause.onclick = () => setPaused(!paused);
@@ -4860,7 +6241,12 @@ function setMode(nextMode) {
   }
 
   ui.impact.onclick = ()=>setImpactMode(!impactMode);
-  ui.fireGuns.onclick=fireGuns;
+  function fireGunsWithHistory() {
+    if (!bodies.some(body=>body.shapeType==="gun")) return;
+    recordHistory();
+    fireGuns();
+  }
+  ui.fireGuns.onclick=fireGunsWithHistory;
 
   
   
@@ -4871,7 +6257,13 @@ function setMode(nextMode) {
       target instanceof HTMLSelectElement ||
       target?.isContentEditable;
 
-    if (event.code==="Space") {
+    if (!typing && (event.ctrlKey || event.metaKey) && event.key.toLowerCase()==="z") {
+      event.preventDefault();
+      if (event.shiftKey) redoScene(); else undoScene();
+    } else if (!typing && (event.ctrlKey || event.metaKey) && event.key.toLowerCase()==="y") {
+      event.preventDefault();
+      redoScene();
+    } else if (event.code==="Space") {
       if (typing || event.repeat) return;
       event.preventDefault();
       setPaused(!paused);
@@ -4889,7 +6281,10 @@ function setMode(nextMode) {
       setImpactMode(!impactMode);
     } else if (event.key.toLowerCase()==="f") {
       if (typing || event.repeat) return;
-      fireGuns();
+      fireGunsWithHistory();
+    } else if (event.key.toLowerCase()==="x") {
+      if (typing || event.repeat) return;
+      setMode("scissors");
     } else if (event.key==="1") {
       if (typing) return;
       setMode("slice");
@@ -4903,6 +6298,9 @@ function setMode(nextMode) {
       if (typing) return;
       setMode("delete");
     } else if (event.key==="5") {
+      if (typing) return;
+      setMode("select");
+    } else if (event.key==="6") {
       if (typing) return;
       setMode("build");
     } else if (event.key==="Enter" && mode==="build" && ui.buildTool.value==="weld") {
